@@ -1,0 +1,46 @@
+#!/bin/sh
+set -e
+
+user=`cat /data/pikpak.txt|head -n1|cut -f1 -d" "`
+pass=`cat /data/pikpak.txt|head -n1|cut -f2 -d" "`
+sqlite3 /opt/alist/data/data.db <<EOF
+INSERT OR REPLACE INTO x_storages VALUES(3,'/每日更新/PikPak',0,'PikPakShare',30,'work','{"root_folder_id":"VNKeLvJO9lkjkuafSAtBA8B5o1","username":"","password":"","share_id":"VNKo1lMvszhJnGP-_G8jbBDVo1","share_pwd":""}','','2023-01-08 19:41:41.749490605+00:00',0,'','','',0,'302_redirect','');
+update x_storages set addition = json_replace(addition, '$.username', $user) where driver = 'PikPakShare';
+update x_storages set addition = json_replace(addition, '$.password', $pass) where driver = 'PikPakShare';
+EOF
+
+if [[ -f /data/pikpakshare_list.txt ]] && [[ -s /data/pikpakshare_list.txt ]]; then
+	id=9000
+	cat  /data/pikpakshare_list.txt | while read line;
+                do
+                    if [ ! -z "$line" ]; then
+                        id=`expr $id + 1`
+                        mount_path=$(echo $line |cut -f1 -d" ")
+			share_id=$(echo $line |cut -f2 -d" ")
+			share_id="\"${share_id}\""
+            share_root=$(echo $line |cut -f3 -d" ")
+			share_root="\"${share_root}\""
+			share_pwd=$(echo $line |cut -f4 -d" ")
+			share_pwd="\"${share_pwd}\""
+                        sqlite3 /opt/alist/data/data.db <<EOF
+INSERT OR REPLACE  INTO x_storages VALUES($id,'/🕸️我的PikPak分享/$mount_path',0,'PikPakShare',30,'work','{"root_folder_id":$share_root,"username":$user,"password":$pass,"share_id":$share_id,"share_pwd":$share_pwd}','','2023-01-08 19:41:41.749490605+00:00',0,'name','ASC','front',0,'302_redirect','');
+EOF
+                    fi
+                done
+
+fi
+	if [[ -f /data/pikpak_list.txt ]] && [[ -s /data/pikpak_list.txt ]]; then
+                id=8000
+                cat  /data/pikpak_list.txt | while read line;
+                do
+		    if [ ! -z "$line" ]; then
+                        id=`expr $id + 1`
+                        mount_path=$(echo $line |cut -f1 -d" ")
+                        user=$(echo $line |cut -f2 -d" ")
+                        pass=$(echo $line |cut -f3 -d" ")
+						sqlite3 /opt/alist/data/data.db <<EOF
+INSERT OR REPLACE  INTO x_storages VALUES($id,"/🅿️我的PikPak/$mount_path",0,'PikPak',30,'work','{"root_folder_id":"","username":$user,"password":$pass}','','2023-02-01 19:18:38.956212498+00:00',0,'name','ASC','front',0,'302_redirect','');
+EOF
+		    fi
+		done
+	fi

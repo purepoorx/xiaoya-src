@@ -1,0 +1,4 @@
+#!/bin/bash
+
+token=$1
+curl https://api.xhofe.top/alist/ali_open/token -X POST -H "User-Agent:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.83 Safari/537.36" -H "Rererer:https://www.aliyundrive.com/" -H "Content-Type:application/json" -d '{"refresh_token":"'$token'", "grant_type": "refresh_token"}' 2>/dev/null| sed 's/,/\n/g' | grep refresh_token | cut -d \: -f2 | sed 's/"//g'

@@ -1,0 +1,38 @@
+{
+  "force": false,
+  "address": "127.0.0.1",
+  "port": 5244,
+  "site_url": "",
+  "cdn": "",
+  "jwt_secret": "Y3JIG4vxT22wn9cq",
+  "token_expires_in": ALIST_TOKEN_EXPIRE_TIME,
+  "database": {
+    "type": "sqlite3",
+    "host": "",
+    "port": 0,
+    "user": "",
+    "password": "",
+    "name": "",
+    "db_file": "/opt/alist/data/data.db",
+    "table_prefix": "x_",
+    "ssl_mode": ""
+  },
+  "scheme": {
+    "https": false,
+    "cert_file": "",
+    "key_file": ""
+  },
+  "temp_dir": "/opt/alist/data/temp",
+  "opentoken_auth_url": "https://api-cf.nn.ci/alist/ali_open/token",
+  "nTTL": 15,
+  "retry_count": 2,
+  "tls_insecure_skip_verify": true,
+  "log": {
+    "enable": true,
+    "name": "/opt/alist/log/alist.log",
+    "max_size": 10,
+    "max_backups": 5,
+    "max_age": 28,
+    "compress": false
+  }
+}
