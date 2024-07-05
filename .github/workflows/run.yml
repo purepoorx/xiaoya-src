@@ -12,9 +12,11 @@ jobs:
     container:
         image: xiaoyaliu/alist:latest
     steps:
+      - name: Obtain Latest Git ONLY within container for checkout
+        run: apk add git --update-cache
       - uses: actions/checkout@v4
       - run: |
           pwd
-          ls -al
+          git -v
 
       - uses: stefanzweifel/git-auto-commit-action@v5
