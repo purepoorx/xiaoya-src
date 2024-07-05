@@ -1,0 +1,19 @@
+name: get-xiaoya-src
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '5 * * * *'
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+        image: xiaoyaliu/alist:latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          pwd
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
