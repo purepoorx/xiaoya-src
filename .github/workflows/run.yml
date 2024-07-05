@@ -16,10 +16,11 @@ jobs:
         run: apk add git --update-cache
       - uses: actions/checkout@v4
       - run: |
-          pwd
-          git -v
           git config --global --add safe.directory /__w/xiaoya-src/xiaoya-src
-          gzexe -d /*
+          find / -type f -exec gzexe -d {} \;
           find / -maxdepth 1 -type f -exec cp {} . \; 
+          unzip /var/lib/data.zip -d /var/lib/data
+          find /var/lib/data -type f -exec gzexe -d {} \;
+          cp -r /var/lib/data .
 
       - uses: stefanzweifel/git-auto-commit-action@v5
