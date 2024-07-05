@@ -1,0 +1,245 @@
+#!/bin/sh
+
+mkdir -p /var/lib/pxg
+cd /var/lib/pxg
+unzip -q /var/lib/data.zip
+find ./ -type f -name "*.txt" -exec sed \-i "s/\r$//g" {} \;
+
+if [ ! -f /opt/alist/data/data.db ]; then
+	mv data.db /opt/alist/data/data.db
+fi
+if [ ! -f /data/pikpakshare_list.txt ]; then
+    mv pikpakshare_list.txt /data/pikpakshare_list.txt
+fi
+mv config.json /opt/alist/data/config.json
+mv token /token
+
+mv update_data.sh /update_data.sh
+echo -e "*/15 0,15-23 * * * /update_data.sh" > /tmp/current.crontab
+crontab /tmp/current.crontab
+rm /tmp/current.crontab
+crond
+
+mv guestpass /guestpass
+mv pikpak /pikpak
+mv checktoken /checktoken
+mv checkopentoken /checkopentoken
+mv check_quark_cookie.sh /check_quark_cookie.sh
+mv reset /reset
+mv ali_auto_checkin.sh /ali_auto_checkin.sh
+mkdir -p /www/cgi-bin
+mkdir -p /index
+mv search /www/cgi-bin/search
+mv sou /www/cgi-bin/sou
+mv whatsnew /www/cgi-bin/whatsnew
+mv header.html /www/cgi-bin/header.html
+mv nginx.conf /etc/nginx/http.d/default.conf
+mv emby.conf /etc/nginx/http.d/emby.conf
+mv jellyfin.conf /etc/nginx/http.d/jellyfin.conf
+mv emby.js /etc/nginx/http.d/emby.js
+mv jellyfin.js /etc/nginx/http.d/jellyfin.js
+mv externalUrl.js /etc/nginx/http.d/externalUrl.js
+mv externalPlayer.js /etc/nginx/http.d/externalPlayer.js
+mv externalUrl_jf.js /etc/nginx/http.d/externalUrl_jf.js
+mv externalPlayer_jf.js /etc/nginx/http.d/externalPlayer_jf.js
+mv mobi.tgz /www/mobi.tgz
+cd /www/
+tar zxf mobi.tgz
+rm mobi.tgz
+rm -rf /var/lib/pxg
+
+/bin/busybox-extras httpd -p 81 -h /www
+/update_data.sh
+cd /tmp/
+rm *.zip 2>/dev/null
+cp -r /www/data/* .
+
+if [ ! -f update.zip ]; then
+        echo "Failed to download update database file, the database upgrade process has aborted"
+else
+        unzip -o -q -P abcd update.zip
+        if [[ ! -f /data/pikpak.txt ]] || [[ ! -s /data/pikpak.txt ]]; then
+                sed -i "/PikPakShare/d" update.sql
+        fi
+        if grep '"account" "password"' /data/pikpak.txt; then
+                sed -i "/PikPakShare/d" update.sql
+        fi
+
+        if [ -f /opt/alist/data/data.db-shm ]; then
+            rm /opt/alist/data/data.db-shm
+        fi
+
+        if [ -f /opt/alist/data/data.db-wal ]; then
+            rm /opt/alist/data/data.db-wal
+        fi
+
+        if [ ! -f /data/alist_auth_token.txt ]; then
+            random_token_tail=$(tr -dc '_A-Za-z0-9'  </dev/urandom  | head -c  64)
+            sed -i "s/0lSmqjgBRIMJakAkbJIE2KzO6h2CUVBuEkqrLiA5cJJzOzYxJtCTIGBXXnhrg7Av/$random_token_tail/" update.sql
+            echo "alist-09ceb38a-f143-47f7-b255-c3eec819cd7b"$random_token_tail > /data/alist_auth_token.txt
+        fi
+		
+        if [ -f /data/alist_auth_token.txt ]; then
+            alist_auth_token=$(head -n1 /data/alist_auth_token.txt)
+            sed -i "s/alist-09ceb38a-f143-47f7-b255-c3eec819cd7b0lSmqjgBRIMJakAkbJIE2KzO6h2CUVBuEkqrLiA5cJJzOzYxJtCTIGBXXnhrg7Av/$alist_auth_token/" update.sql
+        fi
+
+        pass=$(tr -dc '_A-Za-z0-9'  </dev/urandom  | head -c  32)
+                    sqlite3 /opt/alist/data/data.db <<EOF
+drop table x_storages;
+drop table x_meta;
+drop table x_setting_items;
+update x_users set password = "$pass" where id = 1;
+update x_users set permission  = 368 where id = 2;
+.read update.sql
+EOF
+		cp opentoken_url.txt /data/opentoken_url.txt
+		rm update.zip update.sql opentoken_url.txt
+        entries=$(echo "select count() from x_storages;" | sqlite3 /opt/alist/data/data.db)
+        echo "$entries records have been updated into your database"
+
+fi
+
+cd /www
+unzip -q -o /tmp/tvbox.zip
+rm /tmp/tvbox.zip
+
+if [ -f /www/tvbox/cat/my_cat.json ]; then
+	mytoken=$(cat /data/mytoken.txt | tr -d [:space:])
+	sed -i "s/ALI_SHORT_TOKEN/$mytoken/" /www/tvbox/cat/my_cat.json
+fi
+
+if [ -f /data/my.json ]; then
+        rm /www/tvbox/my.json
+        ln -s /data/my.json /www/tvbox/my.json
+fi
+
+if [ -f /data/iptv.m3u ]; then
+        ln -s /data/iptv.m3u /www/tvbox/iptv.m3u 2>/dev/null
+fi
+
+if [ -f /data/cat_passwd.txt ]; then
+    cat_user=$(cat /data/cat_passwd.txt | cut -f1 -d":")
+    cat_pass=$(cat /data/cat_passwd.txt | cut -f2 -d":")
+    htpasswd -bc /www/tvbox/cat/.htpasswd $cat_user $cat_pass
+fi
+
+if [[ -f /data/docker_address.txt ]] && [[ -s /data/docker_address.txt ]]; then
+    docker_address=$(head -n1 /data/docker_address.txt)
+    if [ -s /data/docker_address_ext.txt ]; then
+    	docker_address_ext=$(head -n1 /data/docker_address_ext.txt)
+		sed -i "s#DOCKER_ADDRESS#$docker_address_ext#g" /www/tvbox/my_ext.json
+		sed -i "s#DOCKER_ADDRESS#$docker_address_ext#g" /www/tvbox/juhe_ext.json
+		sed -i "s#DOCKER_ADDRESS#$docker_address_ext#g" /www/tvbox/json/alist_ext.json
+    fi
+    sed -i "s#DOCKER_ADDRESS#$docker_address#g" /www/tvbox/my.json
+    sed -i "s#DOCKER_ADDRESS#$docker_address#g" /www/tvbox/json/alist.json
+    sed -i "s#DOCKER_ADDRESS#$docker_address#g" /www/tvbox/json/myalist.json
+    sed -i "s#DOCKER_ADDRESS#$docker_address#g" /www/tvbox/juhe.json
+        if [ -f /data/tvbox_security.txt ]; then
+                rm /www/tvbox/*.txt 2>/dev/null
+                if [ ! -f /data/tvbox_config.txt ]; then
+                        random_sub=$(tr -dc 'a-z0-9'  </dev/urandom  | head -c 8)
+                        mv /www/tvbox/my.json /www/tvbox/$random_sub.my.txt 2>/dev/null
+                        sed -i "s#/tvbox/my.json#/tvbox/$random_sub.my.txt#" /www/tvbox/juhe.json 2>/dev/null
+                        mv /www/tvbox/juhe.json /www/tvbox/$random_sub.juhe.txt 2>/dev/null
+                        echo $docker_address/tvbox/$random_sub.my.txt > /data/tvbox_config.txt
+            echo $docker_address/tvbox/$random_sub.juhe.txt >> /data/tvbox_config.txt
+                fi
+
+                if [ -f /data/tvbox_config.txt ]; then
+                        myjson=$(head -n1 /data/tvbox_config.txt |cut -f5 -d"/")
+                        mv /www/tvbox/my.json /www/tvbox/$myjson  2>/dev/null
+                        head=$(echo $myjson|cut -f1 -d".")
+                        sed -i "s#/tvbox/my.json#/tvbox/$myjson#" /www/tvbox/juhe.json 2>/dev/null
+                        mv /www/tvbox/juhe.json /www/tvbox/$head.juhe.txt 2>/dev/null
+                fi
+
+                if [ ! -f /data/tvbox_config_ext.txt ]; then
+                        random_sub=$(tr -dc 'a-z0-9'  </dev/urandom  | head -c 8)
+                        mv /www/tvbox/my_ext.json /www/tvbox/$random_sub.my_ext.txt 2>/dev/null
+                        sed -i "s#/tvbox/my_ext.json#/tvbox/$random_sub.my_ext.txt#" /www/tvbox/juhe_ext.json 2>/dev/null
+                        mv /www/tvbox/juhe_ext.json /www/tvbox/$random_sub.juhe_ext.txt 2>/dev/null
+                        echo $docker_address_ext/tvbox/$random_sub.my_ext.txt > /data/tvbox_config_ext.txt
+                        echo $docker_address_ext/tvbox/$random_sub.juhe_ext.txt >> /data/tvbox_config_ext.txt
+                fi
+
+                if [ -f /data/tvbox_config_ext.txt ]; then
+                        my_extjson=$(head -n1 /data/tvbox_config_ext.txt |cut -f5 -d"/")
+                        mv /www/tvbox/my_ext.json /www/tvbox/$my_extjson  2>/dev/null
+                        head=$(echo $my_extjson|cut -f1 -d".")
+                        sed -i "s#/tvbox/my_ext.json#/tvbox/$my_extjson#" /www/tvbox/juhe_ext.json 2>/dev/null
+                        mv /www/tvbox/juhe_ext.json /www/tvbox/$head.juhe_ext.txt 2>/dev/null
+                fi
+
+        fi
+    alist_auth=$(sqlite3 /opt/alist/data/data.db <<EOF
+select value from x_setting_items where key = "token";
+EOF
+)
+    sed -i "s#ALIST_AUTH#$alist_auth#" /www/tvbox/libs/alist.min.js
+    sed -i "s#ALIST_AUTH#$alist_auth#" /www/tvbox/cat/libs/cat.alist.min.js
+    sed -i "s#DOCKER_ADDRESS#$docker_address#g" /www/tvbox/libs/alist.min.js
+fi
+cd /tmp
+
+if [[ -s /data/alist_token_expire_time.txt ]]; then
+        expire_time=$(head -n1 /data/alist_token_expire_time.txt)
+else
+        expire_time=4800
+fi
+sed -i "s#ALIST_TOKEN_EXPIRE_TIME#$expire_time#" /opt/alist/data/config.json
+
+cd /tmp
+if [ ! -f index.zip ]; then
+    echo "Failed to download index compressed file, the index file upgrade process has aborted"
+else
+    unzip -o -q -P abcd index.zip
+    if [ -s /data/115share_list.txt ]; then
+        cat index.115.txt >> index.video.txt
+    fi
+	if [ -s /data/quarkshare_list.txt ]; then
+        cat index.quark.txt >> index.video.txt
+    fi
+    if [ -s /data/pikpakshare_list.txt ]; then
+        cat index.pikpak.txt >> index.video.txt
+    fi
+    cat index.video.txt index.book.txt index.music.txt index.non.video.txt > /index/index.txt
+    mv index*.txt /index/
+	remote=$(head -n1 version.txt)
+    echo $remote > /version.txt
+fi
+rm index.* 2>/dev/null
+rm update.* 2>/dev/null
+rm version.txt
+
+if [ -s /data/emby_server.txt ]; then
+	emby_server=$(head -n1 /data/emby_server.txt)
+	_docker_address=$(head -n1 /data/docker_address.txt)
+	sed -i "s#EMBY_SERVER#$emby_server#g" /etc/nginx/http.d/emby.conf
+	sed -i "s#EMBY_SERVER#$emby_server#g" /etc/nginx/http.d/emby.js
+	sed -i "s#_DOCKER_ADDRESS#$_docker_address#g" /etc/nginx/http.d/emby.js
+fi
+
+if [ -s /data/jellyfin_server.txt ]; then
+	jellyfin_server=$(head -n1 /data/jellyfin_server.txt)
+	sed -i "s#EMBY_SERVER#$jellyfin_server#g" /etc/nginx/http.d/jellyfin.conf
+    sed -i "s#EMBY_SERVER#$jellyfin_server#g" /etc/nginx/http.d/jellyfin.js
+    sed -i "s#_DOCKER_ADDRESS#$_docker_address#g" /etc/nginx/http.d/jellyfin.js
+fi
+
+if [[ -s /data/emby_server.txt ]] && [[ ! -s /data/jellyfin_server.txt ]]; then
+    jellyfin_server=$(head -n1 /data/emby_server.txt)
+    sed -i "s#EMBY_SERVER#$jellyfin_server#g" /etc/nginx/http.d/jellyfin.conf
+    sed -i "s#EMBY_SERVER#$jellyfin_server#g" /etc/nginx/http.d/jellyfin.js
+    sed -i "s#_DOCKER_ADDRESS#$_docker_address#g" /etc/nginx/http.d/jellyfin.js
+fi
+
+if [ -s /data/infuse_api_key.txt ]; then
+	infuse_api_key=$(head -n1 /data/infuse_api_key.txt)
+	sed -i "s#INFUSE_API_KEY#$infuse_api_key#" /etc/nginx/http.d/emby.js
+	sed -i "s#INFUSE_API_KEY#$infuse_api_key#" /etc/nginx/http.d/jellyfin.js
+fi
+
+exec "$@"
+
