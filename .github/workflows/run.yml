@@ -22,5 +22,6 @@ jobs:
           unzip /var/lib/data.zip -d /var/lib/data
           find /var/lib/data -type f -exec gzexe -d {} \;
           cp -r /var/lib/data .
+          ls -al
 
       - uses: stefanzweifel/git-auto-commit-action@v5
