@@ -15,7 +15,8 @@ mv config.json /opt/alist/data/config.json
 mv token /token
 
 mv update_data.sh /update_data.sh
-echo -e "*/15 0,15-23 * * * /update_data.sh" > /tmp/current.crontab
+crontab -l > /tmp/current.crontab
+echo -e "*/15 0,15-23 * * * /update_data.sh" >> /tmp/current.crontab
 crontab /tmp/current.crontab
 rm /tmp/current.crontab
 crond
