@@ -41,7 +41,9 @@ async function redirect2Pan(r) {
 
     if(containQUARK || containQUARK2){
     	r.warn(`夸克跳转到本地链接`);
-        r.internalRedirect("@backend");
+		embyRes.replace('5678/d/','5244/p/')
+		r.return(302, `${(embyRes)}`);
+        //r.internalRedirect("@backend");
         return;
     }
 
