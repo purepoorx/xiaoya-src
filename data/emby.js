@@ -41,8 +41,8 @@ async function redirect2Pan(r) {
 
     if(containQUARK || containQUARK2){
     	r.warn(`夸克跳转到本地链接`);
-		embyRes.replace('5678/d/','5244/p/')
-		r.return(302, `${(embyRes)}`);
+		let quark_302 = embyRes.replace('5678/d/','5244/p/');
+		r.return(302, `${quark_302}`);
         //r.internalRedirect("@backend");
         return;
     }
