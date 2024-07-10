@@ -40,9 +40,9 @@ async function redirect2Pan(r) {
 	var containQUARK2 = embyRes.includes("%E5%A4%B8%E5%85%8B");
 
     if(containQUARK || containQUARK2){
-    	r.warn(`夸克跳转到本地链接`);
+    	r.warn(`夸克跳转 ${embyRes}`);
 		let quark_302 = embyRes.replace('5678/d/','5244/p/');
-		r.return(302, `${quark_302}`);
+		r.return(302, `${embyRes}`);
         //r.internalRedirect("@backend");
         return;
     }
