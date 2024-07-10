@@ -8,7 +8,7 @@ if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then
         user_token=$(head -n1 /data/mytoken.txt)
         #/token $user_token
         echo `date` "User's own token $user_token has been updated into database successfully"
-	#/ali_auto_checkin.sh $user_token
+	/ali_auto_checkin.sh $user_token
 	newtoken=$(/checktoken $user_token)
 	newtoken_len=${#newtoken} 
 	if [ $newtoken_len -eq 32 ]; then
@@ -130,9 +130,30 @@ EOF
 	done
 fi
 
-if [[ -f /data/115share_list.txt ]] && [[ -s /data/115share_list.txt ]]; then
+if [[ -f /data/ucshare_list.txt ]] && [[ -s /data/ucshare_list.txt ]]; then
     id=15000
     echo "delete from x_storages where id >=15000 and id < 16000" | sqlite3 /opt/alist/data/data.db
+    cat /data/ucshare_list.txt |while read line;
+    do
+    if [ ! -z "$line" ]; then
+        id=`expr $id + 1`
+        mount_path=$(echo $line |cut -f1 -d" ")
+        share_id=$(echo $line |cut -f2 -d" ")
+        root_folder_id=$(echo $line |cut -f3 -d" ")
+        if [ "$root_folder_id" == "root" ]; then
+            root_folder_id=""
+        fi
+        pwd=$(echo $line |cut -f4 -d" ")
+        sqlite3 /opt/alist/data/data.db <<EOF
+INSERT INTO x_storages VALUES($id,"/🐿️我的UC分享/$mount_path",0,'UCShare',10,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","order_by":"name","order_direction":"asc","share_id":"$share_id","pass_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'native_proxy','');
+EOF
+    fi
+    done
+fi
+
+if [[ -f /data/115share_list.txt ]] && [[ -s /data/115share_list.txt ]]; then
+    id=16000
+    echo "delete from x_storages where id >=16000 and id < 17000" | sqlite3 /opt/alist/data/data.db
     cat /data/115share_list.txt |while read line;
     do
     if [ ! -z "$line" ]; then
@@ -145,7 +166,7 @@ if [[ -f /data/115share_list.txt ]] && [[ -s /data/115share_list.txt ]]; then
         fi
         pwd=$(echo $line |cut -f4 -d" ")
         sqlite3 /opt/alist/data/data.db <<EOF
-INSERT INTO x_storages VALUES($id,"/🏷️我的115分享/$mount_path",0,'115 Share',1440,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":20,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT INTO x_storages VALUES($id,"/🏷️ 我的115分享/$mount_path",0,'115 Share',1440,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":20,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
     fi
     done
@@ -209,6 +230,18 @@ EOF
 else
 	sqlite3 /opt/alist/data/data.db <<EOF
 delete from x_storages where driver = 'QuarkShare';
+EOF
+fi
+
+if [ -s /data/uc_cookie.txt ]; then
+    /check_uc_cookie.sh
+    cookie=$(head -n1 /data/uc_cookie.txt)
+    sqlite3 /opt/alist/data/data.db <<EOF
+update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = 'UCShare';
+EOF
+else
+    sqlite3 /opt/alist/data/data.db <<EOF
+delete from x_storages where driver = 'UCShare';
 EOF
 fi
 

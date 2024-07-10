@@ -202,6 +202,9 @@ else
 	if [ -s /data/quarkshare_list.txt ]; then
         cat index.quark.txt >> index.video.txt
     fi
+    if [ -s /data/ucshare_list.txt ]; then
+        cat index.uc.txt >> index.video.txt
+    fi
     if [ -s /data/pikpakshare_list.txt ]; then
         cat index.pikpak.txt >> index.video.txt
     fi
