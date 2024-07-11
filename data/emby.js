@@ -38,9 +38,13 @@ async function redirect2Pan(r) {
     var doesNotContainDOCKER = !embyRes.includes("DOCKER_ADDRESS");
 	var containQUARK = embyRes.includes("夸克");
 	var containQUARK2 = embyRes.includes("%E5%A4%B8%E5%85%8B");
+    var containUC = embyRes.includes("（UC）");
+    var containUC2 = embyRes.includes("%EF%BC%88UC%EF%BC%89");
+    var contain115 = embyRes.includes("我的115");
+    var contain1152 = embyRes.includes("%E6%88%91%E7%9A%84115");
 
-    if(containQUARK || containQUARK2){
-    	r.warn(`夸克跳转 ${embyRes}`);
+    if(containQUARK || containQUARK2 || containUC || containUC2 || contain115 || contain1152){
+    	r.warn(`夸克/UC/115 跳转 ${embyRes}`);
 		let quark_302 = embyRes.replace('5678/d/','5244/p/');
 		r.return(302, `${embyRes}`);
         //r.internalRedirect("@backend");
