@@ -43,13 +43,16 @@ async function redirect2Pan(r) {
     var contain115 = embyRes.includes("我的115");
     var contain1152 = embyRes.includes("%E6%88%91%E7%9A%84115");
 
-    if(containQUARK || containQUARK2 || containUC || containUC2 || contain115 || contain1152){
+    if(containQUARK || containQUARK2 || contain115 || contain1152){
     	r.warn(`夸克/UC/115 跳转 ${embyRes}`);
 		let quark_302 = embyRes.replace('5678/d/','5244/p/');
 		r.return(302, `${embyRes}`);
         //r.internalRedirect("@backend");
         return;
     }
+	if (containUC || containUC2){
+		r.internalRedirect("@backend");
+	}
 
     if(doesNotContainHttp && doesNotContainDOCKER){
 		r.warn(`跳转到本地链接`);
