@@ -8,9 +8,9 @@ find ./ -type f -name "*.txt" -exec sed \-i "s/\r$//g" {} \;
 if [ ! -f /opt/alist/data/data.db ]; then
 	mv data.db /opt/alist/data/data.db
 fi
-if [ ! -f /data/pikpakshare_list.txt ]; then
-    mv pikpakshare_list.txt /data/pikpakshare_list.txt
-fi
+#if [ ! -f /data/pikpakshare_list.txt ]; then
+#    mv pikpakshare_list.txt /data/pikpakshare_list.txt
+#fi
 mv config.json /opt/alist/data/config.json
 mv token /token
 
