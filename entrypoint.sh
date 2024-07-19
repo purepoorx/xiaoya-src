@@ -229,6 +229,7 @@ update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where
 EOF
 else
 	sqlite3 /opt/alist/data/data.db <<EOF
+delete from x_storages where id >=13000 and id < 14000;
 delete from x_storages where driver = 'QuarkShare';
 EOF
 fi
