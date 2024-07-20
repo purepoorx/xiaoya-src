@@ -96,7 +96,13 @@ update x_users set password = "$pass" where id = 1;
 update x_users set permission  = 368 where id = 2;
 .read update.sql
 EOF
-		cp opentoken_url.txt /data/opentoken_url.txt
+		if [ /data/open_tv_token_url.txt ]; then
+			cp /data/open_tv_token_url.txt /data/opentoken_url.txt
+			mv /data/open_api.txt /data/open_api.txt.bak 2>/dev/null
+		else
+			cp opentoken_url.txt /data/opentoken_url.txt
+		fi
+
 		rm update.zip update.sql opentoken_url.txt
         entries=$(echo "select count() from x_storages;" | sqlite3 /opt/alist/data/data.db)
         echo "$entries records have been updated into your database"
