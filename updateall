@@ -96,7 +96,7 @@ update x_users set password = "$pass" where id = 1;
 update x_users set permission  = 368 where id = 2;
 .read update.sql
 EOF
-		if [ /data/open_tv_token_url.txt ]; then
+		if [ -f /data/open_tv_token_url.txt ]; then
 			cp /data/open_tv_token_url.txt /data/opentoken_url.txt
 			mv /data/open_api.txt /data/open_api.txt.bak 2>/dev/null
 		else
