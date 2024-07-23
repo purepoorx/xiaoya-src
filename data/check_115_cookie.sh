@@ -5,7 +5,6 @@
     url="https://passportapi.115.com/app/1.0/web/1.0/check/sso"
     headers="Cookie: $cookie; User-Agent: $user_agent; Referer: https://appversion.115.com/1/web/1.0/api/chrome"
     response=$(curl -s -D - -H "$headers" "$url")
-	echo $response
 
     if echo -e "${response}" | grep -q "user_id"; then
         echo "有效 115 Cookie"
