@@ -60,6 +60,14 @@ async function redirect2Pan(r) {
         return;
     }
 
+    const fs = require('fs');                                                                                                       
+    fs.access('/data/ali2115.txt', fs.constants.F_OK, (err) => {
+            if (!err) {              
+                    r.warn(`阿里跳转115`);
+                    r.return(302, `${embyRes}`);
+            }
+    });
+
     if (embyRes.indexOf("/static/http")!=-1) {
         r.warn(`返回cd2链接: ${embyRes}`);
         r.return(302, `${(embyRes)}`);
