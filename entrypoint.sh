@@ -247,6 +247,7 @@ EOF
 fi
 
 if [ -s /data/115_cookie.txt ]; then
+	/check_115_cookie.sh
     cookie=$(head -n1 /data/115_cookie.txt)
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = '115 Share';

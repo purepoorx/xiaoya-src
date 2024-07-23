@@ -17,7 +17,7 @@ set_cookie=$(echo "$response" | grep -i "^Set-Cookie:" | sed 's/Set-Cookie: //')
 status=$(echo "$response" | grep -i status|cut -f2 -d:|cut -f1 -d,)
 
 if [ "$status" == "401" ]; then
-    echo "无效夸克cookie"
+    echo "无效UC cookie"
 elif [ "$set_cookie" != "" ]; then
 		if [ "$1" = 'update' ]; then
 			new_puus=$(echo "$set_cookie" | cut -f2 -d\:|cut -f1 -d\;)
