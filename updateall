@@ -217,6 +217,9 @@ else
     if [ -s /data/pikpakshare_list.txt ]; then
         cat index.pikpak.txt >> index.video.txt
     fi
+    if [ -s /data/myindex.txt ]; then
+        cat /data/myindex.txt >> index.video.txt
+    fi
     cat index.video.txt index.book.txt index.music.txt index.non.video.txt > /index/index.txt
     mv index*.txt /index/
 	remote=$(head -n1 version.txt)
