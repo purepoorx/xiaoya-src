@@ -46,7 +46,7 @@ async function redirect2Pan(r) {
     if(containQUARK || containQUARK2 || contain115 || contain1152){
     	r.warn(`夸克/UC/115 跳转 ${embyRes}`);
 		let quark_302 = embyRes.replace('5678/d/','5244/p/');
-		r.return(302, `${embyRes}`);
+		r.return(302, `${embyRes}`, {'User-Agent': ua});
         //r.internalRedirect("@backend");
         return;
     }
@@ -64,7 +64,7 @@ async function redirect2Pan(r) {
     fs.access('/data/ali2115.txt', fs.constants.F_OK, (err) => {
             if (!err) {              
                     r.warn(`阿里跳转115`);
-                    r.return(302, `${embyRes}`);
+                    r.return(302, `${embyRes}`, {'User-Agent': ua});
             }
     });
 
