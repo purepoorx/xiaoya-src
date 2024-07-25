@@ -8,7 +8,7 @@ if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then
         user_token=$(head -n1 /data/mytoken.txt)
         #/token $user_token
         echo `date` "User's own token $user_token has been updated into database successfully"
-	/ali_auto_checkin.sh $user_token
+	#/ali_auto_checkin.sh $user_token
 	newtoken=$(/checktoken $user_token)
 	newtoken_len=${#newtoken} 
 	if [ $newtoken_len -eq 32 ]; then
