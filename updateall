@@ -37,7 +37,13 @@ mv search /www/cgi-bin/search
 mv sou /www/cgi-bin/sou
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
-mv nginx.conf /etc/nginx/http.d/default.conf
+if [ -f /data/xiaoya_proxy.txt ]; then
+	xiaoyaproxy=$(head -n1 /data/xiaoya_proxy.txt)
+	mv nginx.proxy.conf /etc/nginx/http.d/default.conf
+	sed -i "s#\#xiaoyaproxy#$xiaoyaproxy#g" /etc/nginx/http.d/default.conf
+else
+	mv nginx.conf /etc/nginx/http.d/default.conf
+fi
 mv emby.conf /etc/nginx/http.d/emby.conf
 mv jellyfin.conf /etc/nginx/http.d/jellyfin.conf
 mv emby.js /etc/nginx/http.d/emby.js
