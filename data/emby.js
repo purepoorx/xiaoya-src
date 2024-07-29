@@ -65,6 +65,7 @@ async function redirect2Pan(r) {
             if (!err) {              
                     r.warn(`阿里跳转115`);
                     r.return(302, `${embyRes}`);
+					return;
             }
     });
 
