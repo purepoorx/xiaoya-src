@@ -166,11 +166,30 @@ if [[ -f /data/115share_list.txt ]] && [[ -s /data/115share_list.txt ]]; then
         fi
         pwd=$(echo $line |cut -f4 -d" ")
         sqlite3 /opt/alist/data/data.db <<EOF
-INSERT INTO x_storages VALUES($id,"/🏷️我的115分享/$mount_path",0,'115 Share',1440,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":20,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT INTO x_storages VALUES($id,"/🏷️我的115分享/$mount_path",0,'115 Share',86400,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":20,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
     fi
     done
 fi
+
+if [[ -f /data/115_list.txt ]] && [[ -s /data/115_list.txt ]]; then
+    id=17000
+    echo "delete from x_storages where id >=17000 and id < 18000" | sqlite3 /opt/alist/data/data.db
+    cat /data/115_list.txt |while read line;
+    do
+    if [ ! -z "$line" ]; then
+        id=`expr $id + 1`
+        mount_path=$(echo $line |cut -f1 -d" ")
+        root_folder_id=$(echo $line |cut -f2 -d" ")
+        if [ "$root_folder_id" == "" ]; then
+            root_folder_id="0"
+        fi
+        sqlite3 /opt/alist/data/data.db <<EOF
+INSERT INTO x_storages VALUES($id,"/🏷️我的115/$mount_path",0,'115 Cloud',10,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":56,"limit_rate":2}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
+EOF
+    fi
+    done
+fi	
 
 if [[ -f /data/show_my_ali.txt ]] && [[ -s /data/myopentoken.txt ]]; then
 	user_open_token=$(head -n1 /data/myopentoken.txt)
@@ -251,6 +270,7 @@ if [ -s /data/115_cookie.txt ]; then
     cookie=$(head -n1 /data/115_cookie.txt)
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = '115 Share';
+update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = '115 Cloud';
 EOF
 else
     sqlite3 /opt/alist/data/data.db <<EOF
