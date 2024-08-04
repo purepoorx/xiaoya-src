@@ -42,16 +42,28 @@ async function redirect2Pan(r) {
     var containUC2 = embyRes.includes("%EF%BC%88UC%EF%BC%89");
     var contain115 = embyRes.includes("我的115");
     var contain1152 = embyRes.includes("%E6%88%91%E7%9A%84115");
+	var contain1153 = embyRes.includes("（115）");
+	var contain1154 = embyRes.includes("%EF%BC%88115%EF%BC%89");
 
-    if(containQUARK || containQUARK2 || contain115 || contain1152){
-    	r.warn(`夸克/UC/115 跳转 ${embyRes}`);
+    if(containQUARK || containQUARK2){
+    	r.warn(`夸克 跳转 ${embyRes}`);
 		let quark_302 = embyRes.replace('5678/d/','5244/p/');
 		//r.return(302, `${embyRes}`, {'User-Agent': ua});
         r.internalRedirect("@backend");
         return;
     }
+
+    if(contain115 || contain1152 || contain1153 || contain1154){ 
+        r.warn(`115 跳转 ${embyRes}`);                                                                                                          
+        r.return(302, `${embyRes}`);          
+        //r.internalRedirect("@backend");                                                                                       
+        return;                              
+    }
+
 	if (containUC || containUC2){
+        r.warn(`UC 跳转 ${embyRes}`);
 		r.internalRedirect("@backend");
+		return;
 	}
 
     if(doesNotContainHttp && doesNotContainDOCKER){
