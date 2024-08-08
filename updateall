@@ -47,11 +47,8 @@ fi
 mv emby.conf /etc/nginx/http.d/emby.conf
 mv jellyfin.conf /etc/nginx/http.d/jellyfin.conf
 
-if [ -f /data/emby6908.txt ]; then
-	mv emby2.js /etc/nginx/http.d/emby.js
-else
-	mv emby.js /etc/nginx/http.d/emby.js
-fi
+mv emby2.js /etc/nginx/http.d/emby2.js
+mv emby.js /etc/nginx/http.d/emby.js
 
 mv jellyfin.js /etc/nginx/http.d/jellyfin.js
 mv externalUrl.js /etc/nginx/http.d/externalUrl.js
