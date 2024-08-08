@@ -55,8 +55,8 @@ async function redirect2Pan(r) {
 
     if(contain115 || contain1152 || contain1153 || contain1154){ 
         r.warn(`115 跳转 ${embyRes}`);                                                                                                          
-        r.return(302, `${embyRes}`);          
-        //r.internalRedirect("@backend");                                                                                       
+        //r.return(302, `${embyRes}`);          
+        r.internalRedirect("@backend");                                                                                       
         return;                              
     }
 
@@ -76,7 +76,8 @@ async function redirect2Pan(r) {
     fs.access('/data/ali2115.txt', fs.constants.F_OK, (err) => {
             if (!err) {              
                     r.warn(`阿里跳转115`);
-                    r.return(302, `${embyRes}`);
+                    //r.return(302, `${embyRes}`);
+					r.internalRedirect("@backend");
 					return;
             }
     });
