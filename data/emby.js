@@ -52,14 +52,14 @@ async function redirect2Pan(r) {
         r.internalRedirect("@backend");
         return;
     }
-
+/*
     if(contain115 || contain1152 || contain1153 || contain1154){ 
         r.warn(`115 跳转 ${embyRes}`);                                                                                                          
         r.return(302, `${embyRes}`);          
         //r.internalRedirect("@backend");                                                                                       
         return;                              
     }
-
+*/
 	if (containUC || containUC2){
         r.warn(`UC 跳转 ${embyRes}`);
 		r.internalRedirect("@backend");
@@ -71,7 +71,7 @@ async function redirect2Pan(r) {
         r.internalRedirect("@backend");
         return;
     }
-
+/*
     const fs = require('fs');                                                                                                       
     fs.access('/data/ali2115.txt', fs.constants.F_OK, (err) => {
             if (!err) {              
@@ -80,7 +80,7 @@ async function redirect2Pan(r) {
 					return;
             }
     });
-
+*/
     if (embyRes.indexOf("/static/http")!=-1) {
         r.warn(`返回cd2链接: ${embyRes}`);
         r.return(302, `${(embyRes)}`);
