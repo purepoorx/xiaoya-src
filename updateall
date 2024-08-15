@@ -40,6 +40,11 @@ mv header.html /www/cgi-bin/header.html
 if [ -f /data/xiaoya_proxy.txt ]; then
 	xiaoyaproxy=$(head -n1 /data/xiaoya_proxy.txt)
 	mv nginx.proxy.conf /etc/nginx/http.d/default.conf
+    alist_auth=$(sqlite3 /opt/alist/data/data.db <<EOF
+select value from x_setting_items where key = "token";
+EOF
+)
+    sed -i "s#ALIST_AUTH#$alist_auth#" /etc/nginx/http.d/default.conf
 	sed -i "s#\#xiaoyaproxy#$xiaoyaproxy#g" /etc/nginx/http.d/default.conf
 else
 	mv nginx.conf /etc/nginx/http.d/default.conf
