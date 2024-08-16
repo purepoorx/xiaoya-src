@@ -76,6 +76,7 @@ if [ ! -f update.zip ]; then
         echo "Failed to download update database file, the database upgrade process has aborted"
 else
         unzip -o -q -P abcd update.zip
+		sed -i "s#:120,#:200,#g" update.sql
         if [[ ! -f /data/pikpak.txt ]] || [[ ! -s /data/pikpak.txt ]]; then
                 sed -i "/PikPakShare/d" update.sql
         fi
