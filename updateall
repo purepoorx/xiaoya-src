@@ -215,6 +215,13 @@ else
 fi
 sed -i "s#ALIST_TOKEN_EXPIRE_TIME#$expire_time#" /opt/alist/data/config.json
 
+if [[ -s /data/115_page_size.txt ]]; then
+	pagesize=$(head -n1 /data/115_page_size.txt)
+	sed -i "s#PAGESIZE#$pagesize#" /opt/alist/data/config.json
+else
+ 	sed -i "s#PAGESIZE#120#" /opt/alist/data/config.json
+fi
+
 cd /tmp
 if [ ! -f index.zip ]; then
     echo "Failed to download index compressed file, the index file upgrade process has aborted"
