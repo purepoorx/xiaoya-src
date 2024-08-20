@@ -219,7 +219,7 @@ if [[ -s /data/115_page_size.txt ]]; then
 	pagesize=$(head -n1 /data/115_page_size.txt)
 	sed -i "s#PAGESIZE#$pagesize#" /opt/alist/data/config.json
 else
- 	sed -i "s#PAGESIZE#120#" /opt/alist/data/config.json
+ 	sed -i "s#PAGESIZE#1000#" /opt/alist/data/config.json
 fi
 
 cd /tmp
