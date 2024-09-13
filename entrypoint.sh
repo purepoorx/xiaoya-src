@@ -5,7 +5,7 @@
 /usr/sbin/nginx
 
 if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then
-        user_token=$(head -n1 /data/mytoken.txt)
+        user_token=$(head -n1 /data/mytoken.txt|cut -f1 -d" ")
         #/token $user_token
         echo `date` "User's own token $user_token has been updated into database successfully"
 	#/ali_auto_checkin.sh $user_token
@@ -65,7 +65,8 @@ if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/t
 	echo $oauth_token_url > /data/opentoken_url.txt
 	sed -i "s#https://api-cf.nn.ci/alist/ali_open/token#$oauth_token_url#" /opt/alist/data/config.json
         user_open_token=$(head -n1 /data/myopentoken.txt)
-        user_token=$(head -n1 /data/mytoken.txt)
+        user_token=$(head -n1 /data/mytoken.txt|cut -f1 -d" ")
+        deviceid=$(head -n1 /data/mytoken.txt|cut -f2 -d" ")
         tempfolderid=$(head -n1 /data/temp_transfer_folder_id.txt)
         if [ ! -s /data/folder_type.txt ]; then
             echo "r" > /data/folder_type.txt
@@ -77,6 +78,7 @@ if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/t
         sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set driver = "AliyundriveShare2Open" where driver = 'AliyundriveShare';
 update x_storages set driver = "AliyundriveShare2Open" where driver = 'AliyundriveShare2Pan115';
+update x_storages set addition = json_set(addition, '$.deviceid', "$deviceid") where driver = 'AliyundriveShare2Open';
 update x_storages set addition = json_set(addition, '$.RefreshToken', "$user_token") where driver = 'AliyundriveShare2Open';
 update x_storages set addition = json_set(addition, '$.RefreshTokenOpen', "$user_open_token") where driver = 'AliyundriveShare2Open';
 update x_storages set addition = json_set(addition, '$.TempTransferFolderID', "$tempfolderid") where driver = 'AliyundriveShare2Open';
@@ -99,7 +101,7 @@ EOF
                         root_folder_id=$(echo $line |cut -f3 -d" ")
 			pwd=$(echo $line |cut -f4 -d" ")
                         sqlite3 /opt/alist/data/data.db <<EOF
-INSERT OR REPLACE  INTO x_storages VALUES($id,"/🈴我的阿里分享/$mount_path",0,'AliyundriveShare2Open',30,'work','{"RefreshToken":"$user_token","RefreshTokenOpen":"$user_open_token","TempTransferFolderID":"$tempfolderid","share_id":"$share_id","share_pwd":"$pwd","root_folder_id":"$root_folder_id","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"$rorb"}','','2022-09-29 20:15:08.418227781+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT OR REPLACE  INTO x_storages VALUES($id,"/🈴我的阿里分享/$mount_path",0,'AliyundriveShare2Open',30,'work','{"deviceid":"$deviceid","RefreshToken":"$user_token","RefreshTokenOpen":"$user_open_token","TempTransferFolderID":"$tempfolderid","share_id":"$share_id","share_pwd":"$pwd","root_folder_id":"$root_folder_id","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"$rorb"}','','2022-09-29 20:15:08.418227781+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
 		   fi
                 done
