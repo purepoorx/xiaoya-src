@@ -25,9 +25,9 @@ base_urls=(
     "https://gh-proxy.llyke.com/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
 )
 
-if [ -f /data/download_url.txt ]; then
-	download_url=$(head -n1 /data/download_url.txt)
-else
+#if [ -f /data/download_url.txt ]; then
+#	download_url=$(head -n1 /data/download_url.txt)
+#else
 	success=false
 	for base_url in "${base_urls[@]}"; do
     	remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
@@ -43,7 +43,7 @@ else
     	echo "找不到有效下载地址"
     	exit 1
 	fi
-fi
+#fi
 
 data_dir="/www/data"
 mkdir -p "${data_dir}"
