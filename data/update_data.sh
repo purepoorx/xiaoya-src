@@ -1,28 +1,14 @@
 #!/bin/bash
 
 base_urls=(
-    "https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://cdn.wygg.shop/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://521github.com/extdomains/github.com/xiaoyaliu00/data/raw/main"
-    "https://cors.zme.ink/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://git.jasonml.xyz/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://cdn.wygg.shop/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gh.ddlc.top/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://git.886.be/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gh.idayer.com/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://slink.ltd/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://raw.yzuu.cf/xiaoyaliu00/data/main"
-    "https://raw.nuaa.cf/xiaoyaliu00/data/main"
-    "https://raw.kkgithub.com/xiaoyaliu00/data/main"
-    "https://ghp.ci/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gitdl.cn/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gh.con.sh/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://ghproxy.net/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://github.moeyy.xyz/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gh-proxy.com/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://ghproxy.cc/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gh.llkk.cc/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
-    "https://gh-proxy.llyke.com/https://raw.githubusercontent.com/xiaoyaliu00/data/main"
+    "https://slink.ltd/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://gitdl.cn/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://ghproxy.net/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://github.moeyy.xyz/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://gh-proxy.com/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://ghproxy.cc/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
+    "https://gh.llkk.cc/https://raw.githubusercontent.com/xiaoyaliu00/data/main/"
 )
 
 #if [ -f /data/download_url.txt ]; then
