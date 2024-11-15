@@ -231,6 +231,7 @@ fi
 
 if [ -s /data/ali2115.txt ]; then
     source /data/ali2115.txt
+	cookie=$(head -n1 /data/115_cookie.txt)
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set driver = "AliyundriveShare2Pan115" where driver = 'AliyundriveShare2Open';
 update x_storages set addition = json_set(addition, '$.purge_ali_temp', '$purge_ali_temp') where driver = 'AliyundriveShare2Pan115';
