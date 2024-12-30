@@ -55,7 +55,7 @@ async function redirect2Pan(r) {
 /*
     if(contain115 || contain1152 || contain1153 || contain1154){ 
         r.warn(`115 跳转 ${embyRes}`);                                                                                                          
-        r.return(301, `${embyRes}`);          
+        r.return(302, `${embyRes}`);          
         //r.internalRedirect("@backend");                                                                                       
         return;                              
     }
@@ -76,14 +76,14 @@ async function redirect2Pan(r) {
     fs.access('/data/ali2115.txt', fs.constants.F_OK, (err) => {
             if (!err) {              
                     r.warn(`阿里跳转115`);
-                    r.return(301, `${embyRes}`);
+                    r.return(302, `${embyRes}`);
 					return;
             }
     });
 */
     if (embyRes.indexOf("/static/http")!=-1) {
         r.warn(`返回cd2链接: ${embyRes}`);
-        r.return(301, `${(embyRes)}`);
+        r.return(302, `${(embyRes)}`);
         return;
     }
 
@@ -95,7 +95,7 @@ async function redirect2Pan(r) {
     if (!alistRes.startsWith('error')) {
 	if(alistRes.indexOf("http")!=-1){
 		r.warn(`跳转到小雅链接: ${alistRes}`);
-		r.return(301, alistRes);
+		r.return(302, alistRes);
 		return;
 	}
         if (alistRes.includes("object not found")) {                                                                                         
@@ -125,7 +125,7 @@ async function redirect2Pan(r) {
             const driverRes = await fetchAlistPathApi(alistApiPath, `/${folders[i]}${filePath}`, alistPwd);
             if (!driverRes.startsWith('error')) {
                 r.error(`redirect to: ${driverRes}`);
-                r.return(301, driverRes);
+                r.return(302, driverRes);
                 return;
             }
         }
@@ -210,7 +210,7 @@ async function fetchEmbyFilePath(itemInfoUri, mediaSourceId) {
 async function fetchXYApi(xyurl,ua,cookie) {
     try {                                 
         const res = await ngx.fetch(xyurl, { headers: { "Content-Type": 'application/json;charset=utf-8', "User-Agent": ua, "X-Alist-OriUA": ua}, max_response_body_size: 365535} );
-        if (res.status == 302 || res.status == 301) { 
+        if (res.status == 302) { 
             if (res.statusText == "Found") {                    
                 return res.headers.Location;            
             }                                                 
