@@ -11,7 +11,8 @@
             <button id="embyNPlayer" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="NPlayer"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-NPlayer">　</i>  <span class="button-text">NPlayer</span> </div> </button>
             <button id="embyMX" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="MXPlayer"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-MXPlayer">　</i>  <span class="button-text">MX</span> </div> </button>
             <button id="embyInfuse" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="InfusePlayer"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-infuse">　</i>  <span class="button-text">Infuse</span> </div> </button>
-            <button id="embyStellarPlayer" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="恒星播放器"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-StellarPlayer">　</i>  <span class="button-text">恒星</span> </div> </button>
+            <button id="embyFileball" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="Fileball"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-Fileball">　</i>  <span class="button-text">Fileball</span> </div> </button>			
+            <button id="embySenPlayer" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="SenPlayer"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-SenPlayer">　</i>  <span class="button-text">SenPlayer</span> </div> </button>
             <button id="embyMPV" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="MPV"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-MPV">　</i>  <span class="button-text">MPV</span> </div> </button>
             <button id="embyCopyUrl" type="button" class="detailButton  emby-button emby-button-backdropfilter raised-backdropfilter detailButton-primary" title="复制串流地址"> <div class="detailButton-content"> <i class="md-icon detailButton-icon button-icon button-icon-left icon-Copy">　</i>  <span class="button-text">复制链接</span> </div> </button>
             </div>`
@@ -23,7 +24,8 @@
         document.querySelector("div[is='emby-scroller']:not(.hide) #embyCopyUrl").onclick = embyCopyUrl;
         document.querySelector("div[is='emby-scroller']:not(.hide) #embyVlc").onclick = embyVlc;
         document.querySelector("div[is='emby-scroller']:not(.hide) #embyInfuse").onclick = embyInfuse;
-        document.querySelector("div[is='emby-scroller']:not(.hide) #embyStellarPlayer").onclick = embyStellarPlayer;
+        document.querySelector("div[is='emby-scroller']:not(.hide) #embyFileball").onclick = embyFileball;		
+        document.querySelector("div[is='emby-scroller']:not(.hide) #embySenPlayer").onclick = embySenPlayer;
         document.querySelector("div[is='emby-scroller']:not(.hide) #embyMPV").onclick = embyMPV;
  
         //add icons
@@ -33,7 +35,8 @@
         document.querySelector("div[is='emby-scroller']:not(.hide) .icon-infuse").style.cssText += 'background: url(https://fastly.jsdelivr.net/gh/bpking1/embyExternalUrl@0.0.5/embyWebAddExternalUrl/icons/icon-infuse.webp)no-repeat;background-size: 100% 100%;font-size: 1.4em';
         document.querySelector("div[is='emby-scroller']:not(.hide) .icon-VLC").style.cssText += 'background: url(https://fastly.jsdelivr.net/gh/bpking1/embyExternalUrl@0.0.5/embyWebAddExternalUrl/icons/icon-VLC.webp)no-repeat;background-size: 100% 100%;font-size: 1.3em';
         document.querySelector("div[is='emby-scroller']:not(.hide) .icon-NPlayer").style.cssText += 'background: url(https://fastly.jsdelivr.net/gh/bpking1/embyExternalUrl@0.0.5/embyWebAddExternalUrl/icons/icon-NPlayer.webp)no-repeat;background-size: 100% 100%;font-size: 1.3em';
-        document.querySelector("div[is='emby-scroller']:not(.hide) .icon-StellarPlayer").style.cssText += 'background: url(https://fastly.jsdelivr.net/gh/bpking1/embyExternalUrl@0.0.5/embyWebAddExternalUrl/icons/icon-StellarPlayer.webp)no-repeat;background-size: 100% 100%;font-size: 1.4em';
+        document.querySelector("div[is='emby-scroller']:not(.hide) .icon-Fileball").style.cssText += 'background: url(https://emby-external-url.7o7o.cc/embyWebAddExternalUrl/icons/icon-Fileball.webp)no-repeat;background-size: 100% 100%;font-size: 1.4em';		
+        document.querySelector("div[is='emby-scroller']:not(.hide) .icon-SenPlayer").style.cssText += 'background: url(https://emby-external-url.7o7o.cc/embyWebAddExternalUrl/icons/icon-SenPlayer.webp)no-repeat;background-size: 100% 100%;font-size: 1.4em';
         document.querySelector("div[is='emby-scroller']:not(.hide) .icon-MPV").style.cssText += 'background: url(https://fastly.jsdelivr.net/gh/bpking1/embyExternalUrl@0.0.5/embyWebAddExternalUrl/icons/icon-MPV.webp)no-repeat;background-size: 100% 100%;font-size: 1.4em';
         document.querySelector("div[is='emby-scroller']:not(.hide) .icon-Copy").style.cssText += 'background: url(https://fastly.jsdelivr.net/gh/bpking1/embyExternalUrl@0.0.5/embyWebAddExternalUrl/icons/icon-Copy.webp)no-repeat;background-size: 100% 100%;font-size: 1.4em';
     }
@@ -169,6 +172,7 @@
         let poturl = `potplayer://${encodeURI(mediaInfo.streamUrl)} /sub=${encodeURI(mediaInfo.subUrl)} /current /title="${intent.title}" /seek=${getSeek(intent.position)}`;
         console.log(poturl);
         window.open(poturl, "_blank");
+
     }
  
     //https://wiki.videolan.org/Android_Player_Intents/
@@ -224,12 +228,20 @@
         window.open(infuseUrl, "_blank");
     }
  
-    //StellarPlayer
-    async function embyStellarPlayer() {
-        let mediaInfo = await getEmbyMediaInfo();
-        let stellarPlayerUrl = `stellar://play/${encodeURI(mediaInfo.streamUrl)}`;
-        console.log(`stellarPlayerUrl= ${stellarPlayerUrl}`);
-        window.open(stellarPlayerUrl, "_blank");
+    async function embyFileball() {
+        const mediaInfo = await getEmbyMediaInfo();
+        // see: app 关于, URL Schemes
+        const url = `filebox://play?url=${encodeURIComponent(mediaInfo.streamUrl)}`;
+        console.log(`FileballUrl= ${url}`);
+        window.open(url, "_self");
+    }
+
+    async function embySenPlayer() {
+        const mediaInfo = await getEmbyMediaInfo();
+        // see: app 关于, URL Schemes
+        const url = `SenPlayer://x-callback-url/play?url=${encodeURIComponent(mediaInfo.streamUrl)}`;
+        console.log(`SenPlayerUrl= ${url}`);
+        window.open(url, "_self");
     }
  
     //MPV
@@ -305,3 +317,4 @@
             })
         }
     })
+
