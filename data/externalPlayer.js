@@ -170,7 +170,9 @@
         let mediaInfo = await getEmbyMediaInfo();
         let intent = mediaInfo.intent;
         let poturl = `potplayer://${encodeURI(mediaInfo.streamUrl)} /sub=${encodeURI(mediaInfo.subUrl)} /current /title="${intent.title}" /seek=${getSeek(intent.position)}`;
+		await writeClipboard(poturl);
         console.log(poturl);
+		poturl = `potplayer:///current/clipboard`;
         window.open(poturl, "_blank");
 
     }
@@ -284,6 +286,37 @@
         // }
     }
  
+    async function writeClipboard(text) {
+        let flag = false;
+        if (navigator.clipboard) {
+            // 火狐上 need https
+            try {
+                await navigator.clipboard.writeText(text);
+                flag = true;
+                console.log("成功使用 navigator.clipboard 现代剪切板实现");
+            } catch (error) {
+                console.error('navigator.clipboard 复制到剪贴板时发生错误:', error);
+            }
+        } else {
+            flag = writeClipboardLegacy(text);
+            console.log("不存在 navigator.clipboard 现代剪切板实现,使用旧版实现");
+        }
+        return flag;
+    }
+
+    function writeClipboardLegacy(text) {
+        let textarea = document.createElement('textarea');
+        document.body.appendChild(textarea);
+        textarea.style.position = 'absolute';
+        textarea.style.clip = 'rect(0 0 0 0)';
+        textarea.value = text;
+        textarea.select();
+        if (document.execCommand('copy', true)) {
+            return true;
+        }
+        return false;
+    }
+
     function getOS() {
         let u = navigator.userAgent
         if (!!u.match(/compatible/i) || u.match(/Windows/i)) {
@@ -317,4 +350,5 @@
             })
         }
     })
+
 
