@@ -4,7 +4,6 @@ base_urls=(
     "https://slink.ltd/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://gitdl.cn/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
-    "https://ghproxy.net/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://github.moeyy.xyz/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://gh-proxy.com/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://ghproxy.cc/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
