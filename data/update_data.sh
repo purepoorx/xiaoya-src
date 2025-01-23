@@ -4,11 +4,11 @@ base_urls=(
     "https://slink.ltd/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://gitdl.cn/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
-    "https://github.moeyy.xyz/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://gh-proxy.com/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://ghproxy.cc/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
     "https://gh.llkk.cc/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
 )
+#"https://github.moeyy.xyz/https://raw.githubusercontent.com/xiaoyaDev/data/main/"
 
 #if [ -f /data/download_url.txt ]; then
 #	download_url=$(head -n1 /data/download_url.txt)
