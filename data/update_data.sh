@@ -34,7 +34,7 @@ data_dir="/www/data"
 mkdir -p "${data_dir}"
 touch "${data_dir}/version.txt"
 local_ver=$(cat "${data_dir}/version.txt")
-if [ "$local_ver"x != "$remote_ver"x ] || [ ! -f "${data_dir}/tvbox.zip" ] || [ ! -f "${data_dir}/update.zip" ] || [ ! -f "${data_dir}/index.zip" ]; then
+if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" == "$local_ver" ] || [ ! -f "${data_dir}/tvbox.zip" ] || [ ! -f "${data_dir}/update.zip" ] || [ ! -f "${data_dir}/index.zip" ]; then
 echo "最新版本 $remote_ver 开始更新下载....."
     echo ""	
     if curl --ipv4 --insecure -fsSL -o "${data_dir}/tvbox.zip" $download_url/tvbox.zip; then echo "成功更新 tvbox.zip"; fi 
