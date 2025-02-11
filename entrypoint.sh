@@ -208,7 +208,7 @@ if [[ -f /data/webdav_list.txt ]] && [[ -s /data/webdav_list.txt ]]; then
             password=$(echo $line |cut -f5 -d" ")
 			
             sqlite3 /opt/alist/data/data.db <<EOF
-INSERT OR REPLACE  INTO x_storages VALUES($id,'/🌐我的webdav/$mount_path',0,'WebDav',5,'work','{"vendor":"other","addres":"$addres","username":"$username","password":"$password","root_folder_path":"$root_folder_path"}','','2022-11-12 13:05:12.467024193+00:00',0,'name','ASC','front',0,'native_proxy','');
+INSERT OR REPLACE  INTO x_storages VALUES($id,'/🌐我的webdav/$mount_path',0,'WebDav',5,'work','{"vendor":"other","address":"$address","username":"$username","password":"$password","root_folder_path":"$root_folder_path"}','','2022-11-12 13:05:12.467024193+00:00',0,'name','ASC','front',0,'native_proxy','');
 EOF
                 fi
         done
