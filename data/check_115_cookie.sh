@@ -15,5 +15,5 @@
         	echo "有效的 115 Cookie, 你是115尊贵的会员"
     	fi
     else
-        echo "请求失败，请检查 Cookie 或网络连接是否正确。"
+        echo "请求失败，请检查 115 Cookie 或网络连接是否正确。"
     fi

@@ -42,6 +42,6 @@ elif [ "$status" == "200" ]; then
 	fi
 	echo "有效夸克cookie，欢迎你$member_type会员"
 else
-        echo "请求失败，请检查Cookie或网络连接是否正确。"
+        echo "请求失败，请检查 夸克Cookie 或网络连接是否正确。"
 fi
 

@@ -193,6 +193,28 @@ EOF
 fi
 
 sqlite3 /opt/alist/data/data.db <<EOF
+delete from x_storages where id >= 18000 and id <18500;
+EOF
+if [[ -f /data/webdav_list.txt ]] && [[ -s /data/webdav_list.txt ]]; then
+    id=18000
+        cat  /data/webdav_list.txt | while read line;
+    do
+        if [ ! -z "$line" ]; then
+            id=`expr $id + 1`
+            mount_path=$(echo $line |cut -f1 -d" ")
+            address=$(echo $line |cut -f2 -d" ")
+            root_folder_path=$(echo $line |cut -f3 -d" ")
+            username=$(echo $line |cut -f4 -d" ")
+            password=$(echo $line |cut -f5 -d" ")
+			
+            sqlite3 /opt/alist/data/data.db <<EOF
+INSERT OR REPLACE  INTO x_storages VALUES($id,'/🌐我的webdav/$mount_path',0,'WebDav',5,'work','{"vendor":"other","addres":"$addres","username":"$username","password":"$password","root_folder_path":"$root_folder_path"}','','2022-11-12 13:05:12.467024193+00:00',0,'name','ASC','front',0,'native_proxy','');
+EOF
+                fi
+        done
+fi
+
+sqlite3 /opt/alist/data/data.db <<EOF
 delete from x_storages where id >= 12000 and id <12500;
 EOF
 if [[ -f /data/alist_list.txt ]] && [[ -s /data/alist_list.txt ]]; then
