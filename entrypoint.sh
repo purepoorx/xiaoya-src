@@ -178,7 +178,7 @@ if [[ -f /data/115_list.txt ]] && [[ -s /data/115_list.txt ]]; then
             root_folder_id="0"
         fi
         sqlite3 /opt/alist/data/data.db <<EOF
-INSERT INTO x_storages VALUES($id,"/🏷️我的115/$mount_path",0,'115 Cloud',10,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":300,"limit_rate":2}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT INTO x_storages VALUES($id,"/🏷️我的115/$mount_path",0,'115 Cloud',5,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":300,"limit_rate":2}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
     fi
     done
@@ -187,8 +187,8 @@ fi
 if [[ -f /data/show_my_ali.txt ]] && [[ -s /data/myopentoken.txt ]]; then
 	user_open_token=$(head -n1 /data/myopentoken.txt)
 		sqlite3 /opt/alist/data/data.db <<EOF
-INSERT OR REPLACE  INTO x_storages VALUES(10000,'/📀我的阿里云盘/资源盘',0,'AliyundriveOpen',30,'work','{"root_folder_id":"root","refresh_token":"$user_open_token","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"r"}','','2023-03-01 17:22:05.432198521+00:00',0,'name','ASC','front',0,'302_redirect','');
-INSERT OR REPLACE  INTO x_storages VALUES(10001,'/📀我的阿里云盘/备份盘',0,'AliyundriveOpen',30,'work','{"root_folder_id":"root","refresh_token":"$user_open_token","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"b"}','','2023-03-01 17:22:05.432198521+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT OR REPLACE  INTO x_storages VALUES(10000,'/📀我的阿里云盘/资源盘',0,'AliyundriveOpen',0,'work','{"root_folder_id":"root","refresh_token":"$user_open_token","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"r"}','','2023-03-01 17:22:05.432198521+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT OR REPLACE  INTO x_storages VALUES(10001,'/📀我的阿里云盘/备份盘',0,'AliyundriveOpen',0,'work','{"root_folder_id":"root","refresh_token":"$user_open_token","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"b"}','','2023-03-01 17:22:05.432198521+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
 fi
 
@@ -238,7 +238,7 @@ if [[ -f /data/alist_list.txt ]] && [[ -s /data/alist_list.txt ]]; then
                                 alist_type="AList V3"
 			fi
 			sqlite3 /opt/alist/data/data.db <<EOF
-INSERT OR REPLACE  INTO x_storages VALUES($id,'/🎎我的套娃/$mount_path',0,'$alist_type',30,'work','{"root_folder_path":"$root_folder_id","url":"$site","password":"","access_token":"$access_token","cache":"$cache"}','','2022-11-12 13:05:12.467024193+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT OR REPLACE  INTO x_storages VALUES($id,'/🎎我的套娃/$mount_path',0,'$alist_type',0,'work','{"root_folder_path":"$root_folder_id","url":"$site","password":"","access_token":"$access_token","cache":"$cache"}','','2022-11-12 13:05:12.467024193+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
                 fi
         done
