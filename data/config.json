@@ -27,6 +27,8 @@
   "nTTL": 15,
   "page_size": PAGESIZE,
   "retry_count": 2,
+  "autoremove": 1,
+  "auto_clean_interval": 2,  
   "tls_insecure_skip_verify": true,
   "log": {
     "enable": true,
