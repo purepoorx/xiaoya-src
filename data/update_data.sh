@@ -14,7 +14,7 @@ base_urls=(
 #else
 	success=false
 	for base_url in "${base_urls[@]}"; do
-    	remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -E '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
+    	remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
     	if [ $? -eq 0 ]; then
         	success=true
 			download_url="${base_url}"
