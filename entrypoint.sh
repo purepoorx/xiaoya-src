@@ -50,6 +50,11 @@ EOF
 
 fi
 
+version=$(head -n1 /docker.version)
+sqlite3 /opt/alist/data/data.db <<EOF  
+INSERT INTO x_storages VALUES(20001,'/©️ $version',0,'AliyundriveCron',300000,'work','{"refresh_token":"3f46710d73424aaaa18db8ce2e521fff","share_id":"bZY46W7Do4Q","share_pwd":"","root_folder_id":"65380e7eae106ff4f90041d68b666f62e90ad7b5","order_by":"name","order_direction":"ASC"}','','2023-10-24 18:36:56.698065575+00:00',0,'name','ASC','front',0,'302_redirect','');
+EOF
+
 if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/temp_transfer_folder_id.txt ]]; then
 	oauth_token_url="https://api.nn.ci/alist/ali_open/token"
         if [ -s /data/opentoken_url.txt ]; then
@@ -318,11 +323,6 @@ $a
 EOF
 fi
 
-
-version=$(head -n1 /docker.version)
-sqlite3 /opt/alist/data/data.db <<EOF
-INSERT OR REPLACE  INTO x_storages VALUES(20001,'/©️ $version',0,'UrlTree',0,'work','{"url_structure":"打赏码.jpg:http://img.xiaoya.pro/dashan.png\n指南.md:http://img.xiaoya.pro/notion.md\n指南.pdf:http://img.xiaoya.pro/notion.pdf","head_size":false}','','2023-07-03 12:52:13.90256076+00:00',0,'','','',0,'302_redirect','');
-EOF
 
 if [[ -f /data/proxy.txt ]] && [[ -s /data/proxy.txt ]]; then
 	proxy_url=$(head -n1 /data/proxy.txt)
