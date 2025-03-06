@@ -70,13 +70,13 @@ if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/t
         sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set driver = "AliyundriveShare2Open" where driver = 'AliyundriveShare';
 update x_storages set driver = "AliyundriveShare2Open" where driver = 'AliyundriveShare2Pan115';
-update x_storages set addition = json_set(addition, '$.RefreshToken', "$user_token") where driver = 'AliyundriveShare2Open';
-update x_storages set addition = json_set(addition, '$.RefreshTokenOpen', "$user_open_token") where driver = 'AliyundriveShare2Open';
-update x_storages set addition = json_set(addition, '$.TempTransferFolderID', "$tempfolderid") where driver = 'AliyundriveShare2Open';
-update x_storages set addition = json_set(addition, '$.oauth_token_url', "$oauth_token_url") where driver = 'AliyundriveShare2Open';
-update x_storages set addition = json_set(addition, '$.client_id', "$client_id") where driver = 'AliyundriveShare2Open';
-update x_storages set addition = json_set(addition, '$.client_secret', "$client_secret") where driver = 'AliyundriveShare2Open';
-update x_storages set addition = json_set(addition, '$.rorb', "r") where driver = 'AliyundriveShare2Open';
+update x_storages set addition = json_set(addition, '$.RefreshToken', "$user_token") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
+update x_storages set addition = json_set(addition, '$.RefreshTokenOpen', "$user_open_token") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
+update x_storages set addition = json_set(addition, '$.TempTransferFolderID', "$tempfolderid") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
+update x_storages set addition = json_set(addition, '$.oauth_token_url', "$oauth_token_url") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
+update x_storages set addition = json_set(addition, '$.client_id', "$client_id") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
+update x_storages set addition = json_set(addition, '$.client_secret', "$client_secret") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
+update x_storages set addition = json_set(addition, '$.rorb', "r") where driver = 'AliyundriveShare2Open' or driver = 'AliyundriveCron';
 EOF
 		sqlite3 /opt/alist/data/data.db <<EOF
 delete from x_storages where id >= 5000 and id <5500;
