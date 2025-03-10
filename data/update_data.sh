@@ -9,9 +9,9 @@ base_urls=(
     "https://gh.llkk.cc/https://raw.githubusercontent.com/xiaoyaDev/data/main"
 )
 
-#if [ -f /data/download_url.txt ]; then
-#	download_url=$(head -n1 /data/download_url.txt)
-#else
+if [ -f /data/download_url.txt ]; then
+	download_url=$(head -n1 /data/download_url.txt)
+else
 	success=false
 	for base_url in "${base_urls[@]}"; do
     	remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
