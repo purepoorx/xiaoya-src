@@ -279,6 +279,10 @@ if [ -s /data/infuse_api_key.txt ]; then
 	sed -i "s#INFUSE_API_KEY#$infuse_api_key#" /etc/nginx/http.d/jellyfin.js
 fi
 
-#iptables -A INPUT -p tcp --dport 80 -m connlimit --connlimit-above 1 --connlimit-mask 32 -j DROP
+mkdir -p /www/tvbox/data
+cd /index
+tar zcf /www/tvbox/data/index.115.tgz index.115.txt
+tar zcf /www/tvbox/data/index.video.tgz index.video.txt
+
 exec "$@"
 
