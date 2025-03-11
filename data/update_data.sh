@@ -27,7 +27,7 @@ else
     	echo "找不到有效下载地址"
     	exit 1
 	fi
-#fi
+fi
 
 data_dir="/www/data"
 mkdir -p "${data_dir}"
