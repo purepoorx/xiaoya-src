@@ -11,6 +11,7 @@ base_urls=(
 
 if [ -f /data/download_url.txt ]; then
 	download_url=$(head -n1 /data/download_url.txt)
+	remote_ver=$(curl --ipv4 ${download_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
 else
 	success=false
 	for base_url in "${base_urls[@]}"; do
