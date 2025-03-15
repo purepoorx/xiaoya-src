@@ -20,7 +20,7 @@ echo -e "*/15 0,15-23 * * * /update_data.sh" >> /tmp/current.crontab
 echo -e "0 */2 * * * /check_uc_cookie.sh update" >> /tmp/current.crontab
 crontab /tmp/current.crontab
 rm /tmp/current.crontab
-crond
+crond >> /dev/null 2>&1
 
 mv guestpass /guestpass
 mv pikpak /pikpak
