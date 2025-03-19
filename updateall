@@ -50,6 +50,8 @@ else
 	mv nginx.conf /etc/nginx/http.d/default.conf
 fi
 
+mv real_ip.conf /etc/nginx/nginx.conf
+
 if [ -f /data/my_domain.txt ]; then
 	mv nginx.alt.conf /etc/nginx/http.d/default.conf
 	#domain_name=$(head -n1 /data/my_domain.txt)
