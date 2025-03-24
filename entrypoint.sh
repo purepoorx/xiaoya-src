@@ -328,7 +328,7 @@ if [[ -f /data/proxy.txt ]] && [[ -s /data/proxy.txt ]]; then
 	proxy_url=$(head -n1 /data/proxy.txt)
 	export HTTP_PROXY=$proxy_url
 	export HTTPS_PROXY=$proxy_url
-	export no_proxy=*.aliyundrive.com
+	export no_proxy="localhost,127.0.0.1,192.168.1.0/24,.aliyundrive.com,.115.com,.quark.cn"
 fi
 
 echo "启动容器(Bridge模式)......"
