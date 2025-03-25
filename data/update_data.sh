@@ -37,14 +37,14 @@ local_ver=$(cat "${data_dir}/version.txt")
 if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$remote_ver" ] || [ ! -f "${data_dir}/tvbox.zip" ] || [ ! -f "${data_dir}/update.zip" ] || [ ! -f "${data_dir}/index.zip" ]; then
 echo "最新版本 $remote_ver 开始更新下载....."
     echo ""	
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/tvbox.zip" $download_url/tvbox.zip; then echo "成功更新 tvbox.zip"; fi 
-    if [ curl --ipv4 --insecure -fsSL -o "${data_dir}/update.zip" $download_url/update.zip ]; then 
+    if curl --ipv4 --insecure -fsSL -o "${data_dir}/tvbox.zip" "$download_url/tvbox.zip"; then echo "成功更新 tvbox.zip"; fi 
+    if curl --ipv4 --insecure -fsSL -o "${data_dir}/update.zip" "$download_url/update.zip"; then 
 	echo "成功更新 update.zip"
     else
 	echo -e '\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要下载不到github数据，\n或日志出现 “curl: (7) Failed to connect to raw.githubusercontent.com port 443 after 30 ms: Could not connect to server” \n或 “Parse error near line 1: no such table: x_storages” \n就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m'
     fi
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/index.zip" $download_url/index.zip; then echo "成功更新 index.zip"; fi 
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/version.txt" $download_url/version.txt; then echo "成功更新 version.txt"; fi 
+    if curl --ipv4 --insecure -fsSL -o "${data_dir}/index.zip" "$download_url/index.zip"; then echo "成功更新 index.zip"; fi 
+    if curl --ipv4 --insecure -fsSL -o "${data_dir}/version.txt" "$download_url/version.txt"; then echo "成功更新 version.txt"; fi 
 else
     echo "数据版本已经是最新的无须更新"		
 fi
