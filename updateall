@@ -37,6 +37,8 @@ mv search /www/cgi-bin/search
 mv sou /www/cgi-bin/sou
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
+bash -c "$(curl -s https://xiaoyahelper.zngle.cf/initsoutv.sh)"
+
 if [ -f /data/xiaoya_proxy.txt ]; then
 	xiaoyaproxy=$(head -n1 /data/xiaoya_proxy.txt)
 	mv nginx.proxy.conf /etc/nginx/http.d/default.conf
