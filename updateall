@@ -35,6 +35,7 @@ mkdir -p /www/cgi-bin
 mkdir -p /index
 mv search /www/cgi-bin/search
 mv sou /www/cgi-bin/sou
+mv soutv /www/cgi-bin/soutv
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
 bash -c "$(curl -s https://xiaoyahelper.zngle.cf/initsoutv.sh)"
