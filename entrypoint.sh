@@ -2,6 +2,7 @@
 
 /updateall
 #/bin/busybox-extras httpd -p 81 -h /www
+/sign.sh
 /usr/sbin/nginx
 
 if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then

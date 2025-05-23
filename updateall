@@ -29,6 +29,7 @@ mv checkopentoken /checkopentoken
 mv check_quark_cookie.sh /check_quark_cookie.sh
 mv check_115_cookie.sh /check_115_cookie.sh
 mv check_uc_cookie.sh /check_uc_cookie.sh
+mv sign.sh /sign.sh
 mv reset /reset
 mv ali_auto_checkin.sh /ali_auto_checkin.sh
 mkdir -p /www/cgi-bin
