@@ -50,7 +50,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     update_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     index_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     version_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
-	115share_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
+	a115share_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     rm -rf ${data_dir}/*.bak
     success=true
     if curl --ipv4 --insecure -fsSL -o "${data_dir}/${tvbox_zip_bak}" $download_url/tvbox.zip  && unzip -t "${data_dir}/${tvbox_zip_bak}" 2>&1 >/dev/null; then
@@ -77,9 +77,9 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
                 success=false
         fi
 
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${115share_txt_bak}" $download_url/115share_list.txt; then
+    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" $download_url/115share_list.txt; then
                 echo "成功更新 115share_list.txt"
-                mv ${data_dir}/${115share_txt_bak} /data/115share_internal.txt
+                mv ${data_dir}/${a115share_txt_bak} /data/115share_internal.txt
         else
                 echo "更新 115share_list.txt 失败"
                 success=false
