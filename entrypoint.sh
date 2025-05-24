@@ -4,6 +4,7 @@
 #/bin/busybox-extras httpd -p 81 -h /www
 /sign.sh
 mkdir -p /run/nginx
+touch /run/nginx/nginx.pid
 /usr/sbin/nginx
 
 if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then
