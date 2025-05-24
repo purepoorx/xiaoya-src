@@ -3,6 +3,7 @@
 /updateall
 #/bin/busybox-extras httpd -p 81 -h /www
 /sign.sh
+mkdir -p /run/nginx
 /usr/sbin/nginx
 
 if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then
@@ -150,9 +151,30 @@ EOF
     done
 fi
 
-if [[ -f /data/115share_list.txt ]] && [[ -s /data/115share_list.txt ]]; then
-    id=16000
+if [ -s /data/115_cookie.txt ]; then
+	id=16000
     echo "delete from x_storages where id >=16000 and id < 17000" | sqlite3 /opt/alist/data/data.db
+
+if [ -s /data/115share_internal.txt ]; then
+    cat /data/115share_internal.txt |while read line;
+    do
+    if [ ! -z "$line" ]; then
+        id=`expr $id + 1`
+        mount_path=$(echo $line |cut -f1 -d" ")
+        share_id=$(echo $line |cut -f2 -d" ")
+        root_folder_id=$(echo $line |cut -f3 -d" ")
+        if [ "$root_folder_id" == "root" ]; then
+            root_folder_id=""
+        fi
+        pwd=$(echo $line |cut -f4 -d" ")
+        sqlite3 /opt/alist/data/data.db <<EOF
+INSERT INTO x_storages VALUES($id,"/🏷️ 我的115分享/$mount_path",0,'115 Share',86400,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":300,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
+EOF
+    fi
+    done
+fi
+
+if [ -s /data/115share_list.txt ]; then
     cat /data/115share_list.txt |while read line;
     do
     if [ ! -z "$line" ]; then
@@ -165,10 +187,12 @@ if [[ -f /data/115share_list.txt ]] && [[ -s /data/115share_list.txt ]]; then
         fi
         pwd=$(echo $line |cut -f4 -d" ")
         sqlite3 /opt/alist/data/data.db <<EOF
-INSERT INTO x_storages VALUES($id,"/🏷️我的115分享/$mount_path",0,'115 Share',86400,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":300,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT OR IGNORE INTO x_storages VALUES($id,"/🏷️我的115分享/$mount_path",0,'115 Share',86400,'work','{"cookie":"xxx","root_folder_id":"$root_folder_id","qrcode_token":"","qrcode_source":"linux","page_size":300,"limit_rate":2,"share_code":"$share_id","receive_code":"$pwd"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
     fi
     done
+fi
+
 fi
 
 if [[ -f /data/115_list.txt ]] && [[ -s /data/115_list.txt ]]; then

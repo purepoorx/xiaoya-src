@@ -37,6 +37,7 @@ mkdir -p /index
 mv search /www/cgi-bin/search
 mv sou /www/cgi-bin/sou
 mv soutv /www/cgi-bin/soutv
+mv 115share_internal.txt /data/115share_internal.txt
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
 bash -c "$(curl -s https://xiaoyahelper.zngle.cf/initsoutv.sh)"
@@ -212,13 +213,6 @@ if [[ -f /data/docker_address.txt ]] && [[ -s /data/docker_address.txt ]]; then
                 fi
 
         fi
-    alist_auth=$(sqlite3 /opt/alist/data/data.db <<EOF
-select value from x_setting_items where key = "token";
-EOF
-)
-    sed -i "s#ALIST_AUTH#$alist_auth#" /www/tvbox/libs/alist.min.js
-    sed -i "s#ALIST_AUTH#$alist_auth#" /www/tvbox/cat/libs/cat.alist.min.js
-    sed -i "s#DOCKER_ADDRESS#$docker_address#g" /www/tvbox/libs/alist.min.js
 fi
 cd /tmp
 
@@ -241,14 +235,11 @@ if [ ! -f index.zip ]; then
     echo "Failed to download index compressed file, the index file upgrade process has aborted"
 else
     unzip -o -q -P abcd index.zip
-    if [ -s /data/115share_list.txt ]; then
+    if [ -s /data/115share_internal.txt ]; then
         cat index.115.txt >> index.video.txt
     fi
 	if [ -s /data/quarkshare_list.txt ]; then
         cat index.quark.txt >> index.video.txt
-    fi
-    if [ -s /data/ucshare_list.txt ]; then
-        cat index.uc.txt >> index.video.txt
     fi
     if [[ -s /data/pikpakshare_list.txt ]] && [[ -s /data/pikpak.txt ]]; then
         cat index.pikpak.txt >> index.video.txt
