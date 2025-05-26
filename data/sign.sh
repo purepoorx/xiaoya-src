@@ -13,7 +13,7 @@ config_location() {
                 if ($modified_uri ~ ^/d/[^\\?]*(?!.*sign='"$sign"'($|&))) {
                     return 403;
                 }
-                '
+'
     fi
 
     # 配置文件路径
@@ -36,14 +36,6 @@ config_location() {
 
     # 匹配到目标location行时立即插入配置
     /location \/d\/ \{/ {
-        print
-        # 立即插入新配置
-        printf("%s",new_config)
-        in_target_block = 1
-        next
-    }
-
-    /location.*我的115.*\{/ {
         print
         # 立即插入新配置
         printf("%s",new_config)
