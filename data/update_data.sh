@@ -1,103 +1,172 @@
 #!/bin/bash
 
+# 镜像URL列表
 base_urls=(
-    "https://raw.githubusercontent.com/xiaoyaDev/data/main"
-    "https://slink.ltd/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-    "https://gitdl.cn/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-    "https://gh-proxy.com/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-    "https://ghproxy.cc/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-    "https://gh.llkk.cc/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+	"https://www.gitproxy.click/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+	"https://tvv.tw/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+	"https://github.tbedu.top/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+	"https://gh-proxy.ygxz.in/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+	"https://raw.githubusercontent.com/xiaoyaDev/data/main"
 )
 
-if [[ -f /data/download_url.txt ]] && [[ "$1" == "" ]]; then
-        download_url=$(head -n1 /data/download_url.txt)
-        remote_ver=$(curl --ipv4 ${download_url}/version.txt 2>/dev/null | grep -e '^[0-9]')
-else
-        success=false
-        for base_url in "${base_urls[@]}"; do
-        remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]')
-        if [ $? -eq 0 ]; then
-                success=true
-                        download_url="${base_url}"
-                echo "有效地址为：$download_url"
-                break
-        fi
-        done
-
-        if [ "$success" = false ]; then
-        echo "找不到有效下载地址"
-        exit 1
-        fi
-fi
+error='\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m'
 
 data_dir="/www/data"
+rm -f ${data_dir}/*.bak 2>/dev/null
+
+# 没有传入参数（容器启动调用场景），优先使用自定义URL（自定义URL有可能是127.0.0.1，新建容器场景必然是失败，可以继续尝试其他内置的url）
+# 有传入参数（crontab调用场景），优先使用内置URL
+if [[ "$1" == "" ]]; then
+    [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
+    base_urls=("$download_url" "${base_urls[@]}")
+else
+    [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
+    base_urls=("${base_urls[@]}" "$download_url")
+fi
+
+# 获取远端版本号
+success=false
+for base_url in "${base_urls[@]}"; do
+    remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
+    if [ $? -eq 0 ] && [ -n "$remote_ver" ]; then
+        success=true
+        version_url=$base_url
+        echo "有效地址为：$base_url"
+        break
+    fi
+done
+
+if [ "$success" = false ]; then
+    echo "错误：下载github数据 version.txt 出错"
+    echo -e "$error"
+    exit 1
+fi
+
 mkdir -p "${data_dir}"
 touch "${data_dir}/version.txt"
 local_ver=$(cat "${data_dir}/version.txt")
-if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$remote_ver" ] || [ ! -f "${data_dir}/tvbox.zip" ] || [ ! -f "${data_dir}/update.zip" ] || [ ! -f "${data_dir}/index.zip" ]; then
-        echo "最新版本 $remote_ver 开始更新下载....."
-    echo ""
-#    if curl --ipv4 --insecure -fsSL -o "${data_dir}/tvbox.zip" "$download_url/tvbox.zip"; then echo "成功更新 tvbox.zip"; fi
-#    if curl --ipv4 --insecure -fsSL -o "${data_dir}/update.zip" "$download_url/update.zip"; then
-#       echo "成功更新 update.zip"
-#    else
-#       echo -e '\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要下载不到github数据，\n 或日志出现 “curl: (7) Failed to connect to raw.githubusercontent.com port 443 after 30 ms: Could not connect to server” \n或 “Parse error near line 1: no such table: x_storages” \n就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m'
-#    fi
-#    if curl --ipv4 --insecure -fsSL -o "${data_dir}/index.zip" "$download_url/index.zip"; then echo "成功更新 index.zip"; fi
-#    if curl --ipv4 --insecure -fsSL -o "${data_dir}/version.txt" "$download_url/version.txt"; then echo "成功更新 version.txt"; fi
 
+# 检查是否需要更新
+if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$remote_ver" ] || [ ! -f "${data_dir}/tvbox.zip" ] || [ ! -f "${data_dir}/update.zip" ] || [ ! -f "${data_dir}/index.zip" ]; then
+    echo "最新版本 $remote_ver 开始更新下载....."
+    echo ""
+
+    # 为每个文件创建临时备份文件名
     tvbox_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     update_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     index_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     version_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
-	a115share_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
-    rm -rf ${data_dir}/*.bak
+    a115share_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
+    
+    # 下载状态标记
     success=true
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${tvbox_zip_bak}" $download_url/tvbox.zip  && unzip -t "${data_dir}/${tvbox_zip_bak}" 2>&1 >/dev/null; then
-                echo "成功更新 tvbox.zip"
+    
+    # 下载tvbox.zip（失败时尝试其他镜像）
+    if [ "$success" = true ]; then
+        for base_url in "${base_urls[@]}"; do
+            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${tvbox_zip_bak}" ${base_url}/tvbox.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${tvbox_zip_bak}" >/dev/null 2>&1; then
+                echo "成功从 ${base_url} 下载 tvbox.zip"
                 mv ${data_dir}/${tvbox_zip_bak} ${data_dir}/tvbox.zip
-        else
-                echo "更新 tvbox.zip 失败"
-                success=false
-        fi
+                break
+            else
+                if [ "$base_url" == "${base_urls[-1]}" ]; then
+                    success=false
+                fi
+            fi
+        done
 
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${update_zip_bak}" $download_url/update.zip && unzip -t "${data_dir}/${update_zip_bak}" 2>&1 >/dev/null; then
-                echo "成功更新 update.zip"
+        if [ "$success" = false ]; then
+            echo "错误：下载github数据 tvbox.zip 出错"
+            echo -e "$error"
+        fi
+    fi
+    
+    # 下载update.zip（失败时尝试其他镜像）
+    if [ "$success" = true ]; then
+        for base_url in "${base_urls[@]}"; do
+            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${update_zip_bak}" ${base_url}/update.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${update_zip_bak}" >/dev/null 2>&1; then
+                echo "成功从 ${base_url} 下载 update.zip"
                 mv ${data_dir}/${update_zip_bak} ${data_dir}/update.zip
-        else
-                echo "更新 update.zip 失败"
-                success=false
-        fi
+                break
+            else
+                if [ "$base_url" == "${base_urls[-1]}" ]; then
+                    success=false
+                fi
+            fi
+        done
 
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${index_zip_bak}" $download_url/index.zip && unzip -t "${data_dir}/${index_zip_bak}" 2>&1 >/dev/null; then
-                echo "成功更新 index.zip"
+        if [ "$success" = false ]; then
+            echo "错误：下载github数据 update.zip 出错"
+            echo -e "$error"
+        fi
+    fi
+    
+    
+    # 下载index.zip（失败时尝试其他镜像）
+    if [ "$success" = true ]; then
+        for base_url in "${base_urls[@]}"; do
+            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${index_zip_bak}" ${base_url}/index.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${index_zip_bak}" >/dev/null 2>&1; then
+                echo "成功从 ${base_url} 下载 index.zip"
                 mv ${data_dir}/${index_zip_bak} ${data_dir}/index.zip
-        else
-                echo "更新 index.zip 失败"
-                success=false
+                break
+            else
+                if [ "$base_url" == "${base_urls[-1]}" ]; then
+                    success=false
+                fi
+            fi
+        done
+
+        if [ "$success" = false ]; then
+            echo "错误：下载github数据 index.zip 出错"
+            echo -e "$error"
+        fi
+    fi
+
+    # 下载115share_list.txt（失败时尝试其他镜像）
+    if [ "$success" = true ]; then
+        for base_url in "${base_urls[@]}"; do
+            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" ${base_url}/115share_list.txt >/dev/null 2>&1 && cat "${data_dir}/${a115share_txt_bak}" | grep -q "电影"; then
+                echo "成功从 ${base_url} 下载 115share_list.txt"
+                mv ${data_dir}/${a115share_txt_bak} ${data_dir}/115share_list.txt
+                break
+            else
+                if [ "$base_url" == "${base_urls[-1]}" ]; then
+                    success=false
+                fi
+            fi
+        done
+
+        if [ "$success" = false ]; then
+            echo "错误：下载github数据 115share_list.txt 出错"
+            echo -e "$error"
         fi
 
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" $download_url/115share_list.txt; then
-                echo "成功更新 115share_list.txt"
-                mv ${data_dir}/${a115share_txt_bak} /data/115share_internal.txt
-        else
-                echo "更新 115share_list.txt 失败"
-                success=false
+    fi
+    
+    # 下载version.txt（失败时尝试其他镜像）
+    if [ "$success" = true ]; then
+        for base_url in "${base_urls[@]}"; do
+            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${version_txt_bak}" ${base_url}/version.txt >/dev/null 2>&1 && cat "${data_dir}/${version_txt_bak}" | grep -q -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' ; then
+                echo "成功从 ${base_url} 下载 version.txt"
+                break
+            else
+                if [ "$base_url" == "${base_urls[-1]}" ]; then
+                    success=false
+                fi
+            fi
+        done
+
+        if [ "$success" = false ]; then
+            echo "错误：下载github数据 version.txt 出错"
+            echo -e "$error"
         fi
 
-    if curl --ipv4 --insecure -fsSL -o "${data_dir}/${version_txt_bak}" $download_url/version.txt; then
-                echo ""
-        else
-                echo "更新 version.txt 失败"
-                success=false
-        fi
+    fi
 
     if [ "$success" == true ]; then
         mv ${data_dir}/${version_txt_bak} ${data_dir}/version.txt
-    else
-        echo -e '\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要下载不到github 数据，\n或日志出现 “curl: (7) Failed to connect to raw.githubusercontent.com port 443 after 30 ms: Could not connect to server” \n或 “Parse error near line 1: no such table: x_storages” \n就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m'
     fi
-else
-    echo "数据版本已经是最新的无须更新"
-fi
 
+else
+    echo "数据版本已经是最新的 $local_ver，无须更新"
+fi
