@@ -182,4 +182,6 @@ map $is_external $modified_uri {
 config_location "$sign"
 config_uri_map "$sign"
 config_geo "$sign"
-nginx -s reload
+if [ -f /run/nginx/nginx.pid ]; then
+    nginx -s reload
+fi

@@ -95,7 +95,7 @@ else
         if [[ ! -f /data/pikpak.txt ]] || [[ ! -s /data/pikpak.txt ]]; then
                 sed -i "/PikPakShare/d" update.sql
         fi
-        if grep '"account" "password"' /data/pikpak.txt; then
+        if { [[ -f "/data/pikpak.txt" ]] && grep -q '"account" "password"' "/data/pikpak.txt" 2>/dev/null; }; then 
                 sed -i "/PikPakShare/d" update.sql
         fi
 
