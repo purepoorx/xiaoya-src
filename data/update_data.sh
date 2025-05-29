@@ -1,13 +1,17 @@
 #!/bin/bash
 
-# 镜像URL列表
-base_urls=(
-	"https://www.gitproxy.click/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-	"https://tvv.tw/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-	"https://github.tbedu.top/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-	"https://gh-proxy.ygxz.in/https://raw.githubusercontent.com/xiaoyaDev/data/main"
-	"https://raw.githubusercontent.com/xiaoyaDev/data/main"
+# 镜像URL列表，不包含官方URL，官方的后面自动添加
+alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
+
+mirror_base_urls=(
+    "https://www.gitproxy.click/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+    "https://tvv.tw/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+    "https://github.tbedu.top/https://raw.githubusercontent.com/xiaoyaDev/data/main"
+    "https://gh-proxy.ygxz.in/https://raw.githubusercontent.com/xiaoyaDev/data/main"
 )
+
+base_urls=($(printf "%s\n" "${mirror_base_urls[@]}" | shuf))
+base_urls=("${base_urls[@]}" "${alive_urls[@]}" "https://raw.githubusercontent.com/xiaoyaDev/data/main")
 
 error='\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m'
 
@@ -65,7 +69,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
             if curl --ipv4 --insecure -fsSL -o "${data_dir}/${tvbox_zip_bak}" ${base_url}/tvbox.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${tvbox_zip_bak}" >/dev/null 2>&1; then
-                echo "成功从 ${base_url} 下载 tvbox.zip"
+                echo "成功下载 tvbox.zip 地址：${base_url}/tvbox.zip"
                 mv ${data_dir}/${tvbox_zip_bak} ${data_dir}/tvbox.zip
                 break
             else
@@ -85,7 +89,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
             if curl --ipv4 --insecure -fsSL -o "${data_dir}/${update_zip_bak}" ${base_url}/update.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${update_zip_bak}" >/dev/null 2>&1; then
-                echo "成功从 ${base_url} 下载 update.zip"
+                echo "成功下载 update.zip 地址：${base_url}/update.zip"
                 mv ${data_dir}/${update_zip_bak} ${data_dir}/update.zip
                 break
             else
@@ -106,7 +110,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
             if curl --ipv4 --insecure -fsSL -o "${data_dir}/${index_zip_bak}" ${base_url}/index.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${index_zip_bak}" >/dev/null 2>&1; then
-                echo "成功从 ${base_url} 下载 index.zip"
+                echo "成功下载 index.zip 地址：${base_url}/index.zip"
                 mv ${data_dir}/${index_zip_bak} ${data_dir}/index.zip
                 break
             else
@@ -126,7 +130,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
             if curl --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" ${base_url}/115share_list.txt >/dev/null 2>&1 && cat "${data_dir}/${a115share_txt_bak}" | grep -q "电影"; then
-                echo "成功从 ${base_url} 下载 115share_list.txt"
+                echo "成功下载 115share_list.txt 地址：${base_url}/115share_list.txt"
                 mv ${data_dir}/${a115share_txt_bak} ${data_dir}/115share_list.txt
                 break
             else
@@ -147,7 +151,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
             if curl --ipv4 --insecure -fsSL -o "${data_dir}/${version_txt_bak}" ${base_url}/version.txt >/dev/null 2>&1 && cat "${data_dir}/${version_txt_bak}" | grep -q -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' ; then
-                echo "成功从 ${base_url} 下载 version.txt"
+                echo "成功下载 version.txt 地址：${base_url}/version.txt"
                 break
             else
                 if [ "$base_url" == "${base_urls[-1]}" ]; then

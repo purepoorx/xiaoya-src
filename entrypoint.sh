@@ -17,7 +17,7 @@ if [[ -f /data/mytoken.txt ]] && [[ -s /data/mytoken.txt ]]; then
 	if [ $newtoken_len -eq 32 ]; then
 		echo "$(sed "s/$user_token/$newtoken/" /data/mytoken.txt)" > /data/mytoken.txt
 	fi
-	open_token=$(head -n1 /data/myopentoken.txt)
+	open_token=$(head -n1 /data/myopentoken.txt| tr -d '\r')
 	newopentoken=$(/checkopentoken $open_token)
         newopentoken_len=${#newopentoken}
         if [[ $newopentoken_len -eq 280 ]] || [[ $newopentoken_len -eq 335 ]]; then
@@ -33,14 +33,12 @@ if [[ -f /data/pikpak.txt ]] && [[ -s /data/pikpak.txt ]]; then
 	echo `date` "User's own PikPak account has been updated into database successfully"
 fi
 
-if [[ -f /data/guestpass.txt ]] && [[ -s /data/guestpass.txt ]]; then
-        guest_pass=$(head -n1 /data/guestpass.txt)
+if [ -f /data/guestlogin.txt ]; then
+	if [[ -f /data/guestpass.txt ]] && [[ -s /data/guestpass.txt ]]; then
+        guest_pass=$(head -n1 /data/guestpass.txt | tr -d '\r')
         /guestpass $guest_pass
         echo `date` "User's guest password has been updated into database successfully"
-fi
-
-if [ -f /data/guestlogin.txt ]; then
-	guest_pass=$(head -n1 /data/guestpass.txt)
+	fi
         sqlite3 /opt/alist/data/data.db <<EOF
 update x_users set disabled = 1 where id = 2;
 INSERT OR REPLACE INTO x_users VALUES(3,'dav',"$guest_pass",'/',0,368,'',0,0,'');
@@ -72,9 +70,9 @@ if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/t
 	fi
 	echo $oauth_token_url > /data/opentoken_url.txt
 	sed -i "s#https://api-cf.nn.ci/alist/ali_open/token#$oauth_token_url#" /opt/alist/data/config.json
-        user_open_token=$(head -n1 /data/myopentoken.txt)
-        user_token=$(head -n1 /data/mytoken.txt)
-        tempfolderid=$(head -n1 /data/temp_transfer_folder_id.txt)
+        user_open_token=$(head -n1 /data/myopentoken.txt| tr -d '\r')
+        user_token=$(head -n1 /data/mytoken.txt| tr -d '\r')
+        tempfolderid=$(head -n1 /data/temp_transfer_folder_id.txt| tr -d '\r')
         sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set driver = "AliyundriveShare2Open" where driver = 'AliyundriveShare';
 update x_storages set driver = "AliyundriveShare2Open" where driver = 'AliyundriveShare2Pan115';
@@ -216,7 +214,7 @@ EOF
 fi	
 
 if [[ -f /data/show_my_ali.txt ]] && [[ -s /data/myopentoken.txt ]]; then
-	user_open_token=$(head -n1 /data/myopentoken.txt)
+	user_open_token=$(head -n1 /data/myopentoken.txt| tr -d '\r')
 		sqlite3 /opt/alist/data/data.db <<EOF
 INSERT OR REPLACE  INTO x_storages VALUES(10000,'/📀我的阿里云盘/资源盘',0,'AliyundriveOpen',0,'work','{"root_folder_id":"root","refresh_token":"$user_open_token","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"r"}','','2023-03-01 17:22:05.432198521+00:00',0,'name','ASC','front',0,'302_redirect','');
 INSERT OR REPLACE  INTO x_storages VALUES(10001,'/📀我的阿里云盘/备份盘',0,'AliyundriveOpen',0,'work','{"root_folder_id":"root","refresh_token":"$user_open_token","order_by":"name","order_direction":"ASC","oauth_token_url":"$oauth_token_url","client_id":"$client_id","client_secret":"$client_secret","rorb":"b"}','','2023-03-01 17:22:05.432198521+00:00',0,'name','ASC','front',0,'302_redirect','');
@@ -278,7 +276,7 @@ fi
 if [ -s /data/ali2115.txt ]; then
     source /data/ali2115.txt
 	if [ -s /data/115_cookie.txt ]; then
-		cookie=$(head -n1 /data/115_cookie.txt)
+		cookie=$(head -n1 /data/115_cookie.txt| tr -d '\r')
 	fi
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set driver = "AliyundriveShare2Pan115" where driver = 'AliyundriveShare2Open';
@@ -291,7 +289,7 @@ fi
 
 if [ -s /data/quark_cookie.txt ]; then
 	/check_quark_cookie.sh
-	cookie=$(head -n1 /data/quark_cookie.txt)
+	cookie=$(head -n1 /data/quark_cookie.txt| tr -d '\r')
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = 'QuarkShare';
 EOF
@@ -304,7 +302,7 @@ fi
 
 if [ -s /data/uc_cookie.txt ]; then
     /check_uc_cookie.sh
-    cookie=$(head -n1 /data/uc_cookie.txt)
+    cookie=$(head -n1 /data/uc_cookie.txt| tr -d '\r')
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = 'UCShare';
 EOF
@@ -316,7 +314,7 @@ fi
 
 if [ -s /data/115_cookie.txt ]; then
 	/check_115_cookie.sh
-    cookie=$(head -n1 /data/115_cookie.txt)
+    cookie=$(head -n1 /data/115_cookie.txt| tr -d '\r')
     sqlite3 /opt/alist/data/data.db <<EOF
 update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = '115 Share';
 update x_storages set addition = json_set(addition, '$.cookie', '$cookie') where driver = '115 Cloud';
@@ -351,7 +349,7 @@ fi
 
 
 if [[ -f /data/proxy.txt ]] && [[ -s /data/proxy.txt ]]; then
-	proxy_url=$(head -n1 /data/proxy.txt)
+	proxy_url=$(head -n1 /data/proxy.txt| tr -d '\r')
 	export HTTP_PROXY=$proxy_url
 	export HTTPS_PROXY=$proxy_url
 	export no_proxy="localhost,127.0.0.1,192.168.1.0/24,.aliyundrive.com,.115.com,.quark.cn"
