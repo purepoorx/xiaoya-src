@@ -4,6 +4,8 @@ if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlo
     sign=$(cat /data/guestpass.txt | tr -d '\r\n' | md5sum | awk '{print $1}')
 fi
 
+sed -i "s/XIAOYASIGN/$sign/g" /etc/nginx/http.d/emby.js
+
 config_location() {
     sign=$1
     if [ -z "$sign" ]; then
@@ -74,11 +76,6 @@ config_geo() {
 geo $remote_addr $is_external {
     default 1;
 
-    192.168.0.0/16    0;
-    10.0.0.0/8        0;
-    172.16.0.0/12     0;
-    127.0.0.0/8       0;
-    100.64.0.0/10     0;
 }
 '
     fi

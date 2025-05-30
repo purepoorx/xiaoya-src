@@ -87,7 +87,8 @@ async function redirect2Pan(r) {
         return;
     }
 
-    const alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80');
+    const alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
+	
     let alistRes = await fetchXYApi(`${alistFilePath}`, `${ua}`, `${cookie}`);
     r.warn(`xiaoya容器返回: ${alistRes}`); 
 
