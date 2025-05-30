@@ -172,7 +172,7 @@ EOF
 fi
 
 if [ -s /data/115share_list.txt ]; then
-	id=16500
+	id=16200
     cat /data/115share_list.txt |while read line;
     do
     if [ ! -z "$line" ]; then
