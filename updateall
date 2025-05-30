@@ -235,7 +235,7 @@ if [ ! -f index.zip ]; then
     echo "Failed to download index compressed file, the index file upgrade process has aborted"
 else
     unzip -o -q -P abcd index.zip
-    if [ -s /data/115share_internal.txt ]; then
+    if [ -s /data/115_cookie.txt ]; then
         cat index.115.txt >> index.video.txt
     fi
 	if [ -s /data/quarkshare_list.txt ]; then

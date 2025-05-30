@@ -149,10 +149,10 @@ EOF
 fi
 
 if [ -s /data/115_cookie.txt ]; then
-	id=16000
     echo "delete from x_storages where id >=16000 and id < 17000" | sqlite3 /opt/alist/data/data.db
 
 if [ -s /data/115share_internal.txt ]; then
+	id=16000
     cat /data/115share_internal.txt |while read line;
     do
     if [ ! -z "$line" ]; then
@@ -172,6 +172,7 @@ EOF
 fi
 
 if [ -s /data/115share_list.txt ]; then
+	id=16500
     cat /data/115share_list.txt |while read line;
     do
     if [ ! -z "$line" ]; then
