@@ -1,10 +1,18 @@
 #!/bin/bash
 
 direct_link=$(cat /opt/alist/alist | grep -ao "\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}" | sed "s/\\\$/\$dollar/g")
+sign_cond=$(cat /opt/alist/alist | grep -ao 'n!=="preview"&&[a-z]*\.sign' | sed "s/\\\$/\$dollar/g")
+sign_str=$(cat /opt/alist/alist | grep -ao '\?sign=\$\{[a-z]*\.sign\}' | sed "s/\\\$/\$dollar/g")
 direct_link_sign=$direct_link
 if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlogin.txt ]; then
     sign=$(cat /data/guestpass.txt | tr -d '\r\n' | md5sum | awk '{print $1}')
-    direct_link_sign="$(cat /opt/alist/alist | grep -ao "\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}" | sed "s/\\\$/\$dollar/g")?sign=$sign"
+    js='
+(function(){
+    return "?sign='"$sign"'";
+})();
+'
+    js=$(echo -n "$js" | base64 -w 0)
+    direct_link_sign="$(cat /opt/alist/alist | grep -ao "\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}" | sed "s/\\\$/\$dollar/g")\$dollar{(()=>{const encodedFunc = \"$js\"; const decodedFunc = atob(encodedFunc); return eval(decodedFunc);})()}"
 fi
 
 # 配置文件路径
@@ -234,7 +242,9 @@ config_location_assets() {
     location /assets {
         proxy_pass '"$alist_address"';
         proxy_set_header Accept-Encoding "";
-        sub_filter "'"$direct_link"'" "'"$direct_link_sign"'";
+        sub_filter '"'$direct_link'"' '"'$direct_link_sign'"';
+        sub_filter '"'$sign_str'"' '"''"';
+        sub_filter '"'$sign_cond'"' '"'false'"';
         sub_filter_once off;
         sub_filter_types *;
         proxy_cache apicache;
