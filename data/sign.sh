@@ -1,7 +1,7 @@
 #!/bin/bash
 
 direct_link=$(cat /opt/alist/alist | grep -ao "\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}\\\$\\{[a-z]*\\}" | sed "s/\\\$/\$dollar/g")
-sign_cond=$(cat /opt/alist/alist | grep -ao 'n!=="preview"&&[a-z]*\.sign' | sed "s/\\\$/\$dollar/g")
+sign_cond=$(cat /opt/alist/alist | grep -ao '[a-z]*!=="preview"&&[a-z]*\.sign' | sed "s/\\\$/\$dollar/g")
 sign_str=$(cat /opt/alist/alist | grep -ao '\?sign=\$\{[a-z]*\.sign\}' | sed "s/\\\$/\$dollar/g")
 direct_link_sign=$direct_link
 if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlogin.txt ]; then
