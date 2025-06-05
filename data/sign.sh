@@ -18,7 +18,7 @@ fi
 # 配置文件路径
 CONFIG_FILE="/etc/nginx/http.d/default.conf" 
 
-alist_address="http://127.0.0.1:$(cat $CONFIG_FILE | grep -o ":52[0-9]*" | tr -d ":" | head -n1)"
+alist_address="http://127.0.0.1:$(cat $CONFIG_FILE | grep -o ':[0-9]*/d/' | tr -d ':' | awk -F'/' '{print $1}'| head -n1)"
 
 sed -i "s/XIAOYASIGN/$sign/g" /etc/nginx/http.d/emby.js
 
