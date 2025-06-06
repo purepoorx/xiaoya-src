@@ -12,12 +12,18 @@ sign_str=$(cat /opt/alist/alist | grep -ao '\?sign=\$\{[a-z]*\.sign\}' | sed "s/
 #这里有两个匹配的，第二处不知道什么应用场景，仅修改第一处。
 login_cmd=$(cat /opt/alist/alist | grep -ao '[a-zA-Z]\.success.*?login\.success.*?,.*?.token\),' | head -n1 | sed "s/\\\$/\$dollar/g")
 login_cmd_sign=$login_cmd
-post_api=$(cat /opt/alist/alist | grep -ao '[a-zA-Z]*\.post\("/auth/login"' | awk -F'(' '{print $1}' | head -n1)
+post_api_auth=$(cat /opt/alist/alist | grep -ao '[a-zA-Z]*\.post\("/auth/login"' | awk -F'(' '{print $1}' | head -n1)
 
 location_getsignmd5=$(cat "$CONFIG_FILE" | grep "cgi-bin/soutv" | sed 's/^\s*//g' | head -n1)
 
 if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlogin.txt ]; then
-    sign=$(cat /data/guestpass.txt | tr -d '\r\n' | md5sum | awk '{print $1}')
+    
+    if [ -f /data/salt.txt ]; then
+        sign=$(cat /data/salt.txt | tr -d '\r\n' | md5sum | awk '{print $1}')
+    else
+        sign=$({ ip link show; date; } | tr -d '\r\n' | md5sum | awk '{print $1}')
+    fi
+    
     echo -n "$sign" >/index/md5
 
     #给URL加上签名
@@ -32,7 +38,7 @@ if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlo
     #登录的同时远程获取md5
     js='
 (function(){
-    '"$post_api"'("/getsignmd5", "cat md5", {
+    '"$post_api_auth"'("/getsignmd5", "cat md5", {
   headers: {
     "Content-Type": "text/plain"
   }
@@ -50,6 +56,30 @@ fi
 alist_address="http://127.0.0.1:$(cat "$CONFIG_FILE" | grep -o ':[0-9]*/d/' | tr -d ':' | awk -F'/' '{print $1}'| head -n1)"
 
 sed -i "s/XIAOYASIGN/$sign/g" /etc/nginx/http.d/emby.js
+
+gen_api_get_list_sub_filter() {
+    while read -r line; do
+        post_api=$(echo "$line" | awk -F'(' '{print $1}')
+        js='
+(function(){
+    '"$post_api"'("/getsignmd5", "cat md5", {
+  headers: {
+    "Content-Type": "text/plain"
+  }
+})
+        .then(response => {
+            localStorage.setItem("signmd5", response);
+        });
+})();
+'
+        js=$(echo -n "$js" | base64 -w 0)
+        sub_line="(()=>{(()=>{const encodedFunc = \"$js\"; const decodedFunc = atob(encodedFunc); eval(decodedFunc);})();return $line})()"
+        echo 'sub_filter '"'$line'"' '"'$sub_line'"';'
+    done < <(
+        cat /opt/alist/alist | grep -ao '[a-zA-Z]*\.post\("/fs/get".*?\)'
+        cat /opt/alist/alist | grep -ao '[a-zA-Z]*\.post\("/fs/list".*?\)'
+        )
+}
 
 config_location() {
     sign=$1
@@ -275,6 +305,7 @@ config_location_assets() {
         sub_filter '"'$login_cmd'"' '"'$login_cmd_sign'"';
         sub_filter '"'$sign_str'"' '"''"';
         sub_filter '"'$sign_cond'"' '"'false'"';
+        '"$(gen_api_get_list_sub_filter)"'
         sub_filter_once off;
         sub_filter_types *;
         proxy_cache apicache;
