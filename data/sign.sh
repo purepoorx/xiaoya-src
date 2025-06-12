@@ -54,8 +54,12 @@ if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlo
 fi
 
 alist_address="http://127.0.0.1:$(cat "$CONFIG_FILE" | grep -o ':[0-9]*/d/' | tr -d ':' | awk -F'/' '{print $1}'| head -n1)"
+docker_ip="127.0.0.1"
+if [ "$alist_address"x = "http://127.0.0.1:5244"x ]; then
+    docker_ip=$(ifconfig "eth0" | grep "inet addr" | grep -o "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -n1)
+fi
 
-sed -i "s/XIAOYASIGN/$sign/g" /etc/nginx/http.d/emby.js
+sed -i "s/sign=[^']*/sign=$sign/g" /etc/nginx/http.d/emby.js
 
 gen_api_get_list_sub_filter() {
     while read -r line; do
@@ -88,7 +92,7 @@ config_location() {
     else
         NEW_CONFIG='
                 if ($modified_uri ~ ^/d/[^\\?]*(?!.*sign='"$sign"'($|&))) {
-                    return 403;
+                    return 302 http://'"$docker_ip"':45678$request_uri;
                 }
 '
     fi
@@ -417,6 +421,72 @@ config_location_getsignmd5() {
 
 }
 
+config_emby_local_direct_link_server() {
+    sign=$1
+    if [ -z "$sign" ]; then
+        NEW_CONFIG=''
+    else
+        NEW_CONFIG='
+server  {
+    listen '"$docker_ip"':45678;
+    server_name emby_local_direct_link;
+    location  /d/ {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Range $http_range;
+        proxy_set_header If-Range $http_if_range;
+        proxy_redirect off;
+        proxy_pass '"$alist_address"'/d/;
+        limit_req zone=two burst=2;
+    }
+}
+'
+    fi
+
+    # 临时文件
+    TMP_FILE=$(mktemp)
+
+    # 检查文件是否存在
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Error: Nginx configuration file not found at $CONFIG_FILE"
+        exit 1
+    fi
+
+    # 处理文件
+    awk -v new_config="$NEW_CONFIG" '
+    BEGIN {
+        print
+        # 立即插入新配置
+        printf("%s",new_config)
+        block_num = 0
+    }
+
+    # 在目标块中检查现有的server块
+    /server  \{/ {
+        # 跳过现有的块（不打印）
+        while (getline > 0) {
+            if (/}[[:space:]]*$/) {
+                block_num = block_num + 1
+            }
+            if (block_num == 2) {
+                block_num = 0
+                break
+            }
+        }
+        next
+    }
+
+    # 其他情况直接打印
+    {
+        print
+    }
+    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
+
+    mv -f "$TMP_FILE" "$CONFIG_FILE"
+}
+
 config_location "$sign"
 config_uri_map "$sign"
 config_geo "$sign"
@@ -427,6 +497,9 @@ config_location_assets "$sign"
 
 #给nginx放开获取signmd5的api白名单
 config_location_getsignmd5 "$sign"
+
+#增加emby本地直链服务器
+config_emby_local_direct_link_server "$sign"
 
 if [ -f /run/nginx/nginx.pid ]; then
     nginx -s reload
