@@ -55,7 +55,7 @@ INSERT INTO x_storages VALUES(20001,'/©️ $version',0,'AliyundriveCron',300000
 EOF
 
 if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/temp_transfer_folder_id.txt ]]; then
-	oauth_token_url="https://api.nn.ci/alist/ali_open/token"
+	oauth_token_url="http://auth.xiaoya.pro/api/ali_open/refresh"
         if [ -s /data/opentoken_url.txt ]; then
                 oauth_token_url=`cat /data/opentoken_url.txt`
         fi
