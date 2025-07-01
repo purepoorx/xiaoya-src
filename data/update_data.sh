@@ -22,10 +22,18 @@ rm -f ${data_dir}/*.bak 2>/dev/null
 # 有传入参数（crontab调用场景），优先使用内置URL
 if [[ "$1" == "" ]]; then
     [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
-    base_urls=("$download_url" "${base_urls[@]}")
+    if grep 127.0.0.1 /data/download_url.txt && [[ ! -f ${data_dir}/tvbox.zip  ]] && [[ ! -f ${data_dir}/index.zip  ]] && [[ ! -f ${data_dir}/update.zip  ]] && [[ ! -f ${data_dir}/version.txt  ]]; then
+	base_urls=("${base_urls[@]}")
+    else
+	base_urls=("$download_url")
+    fi
 else
     [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
-    base_urls=("${base_urls[@]}" "$download_url")
+    if grep 127.0.0.1 /data/download_url.txt; then
+    	base_urls=("${base_urls[@]}" "$download_url")
+    else
+	base_urls=("$download_url" "${base_urls[@]}")
+    fi
 fi
 
 # 获取远端版本号
