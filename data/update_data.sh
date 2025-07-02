@@ -25,7 +25,7 @@ if [[ "$1" == "" ]]; then
     if grep 127.0.0.1 /data/download_url.txt && [[ ! -f ${data_dir}/tvbox.zip  ]] && [[ ! -f ${data_dir}/index.zip  ]] && [[ ! -f ${data_dir}/update.zip  ]] && [[ ! -f ${data_dir}/version.txt  ]]; then
 	base_urls=("${base_urls[@]}")
     else
-	base_urls=("$download_url")
+	base_urls=("$download_url" "${base_urls[@]}")
     fi
 else
     [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
