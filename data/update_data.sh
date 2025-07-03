@@ -13,7 +13,7 @@ mirror_base_urls=(
 base_urls=($(printf "%s\n" "${mirror_base_urls[@]}" | shuf))
 base_urls=("https://raw.githubusercontent.com/xiaoyaDev/data/main" "${base_urls[@]}" "${alive_urls[@]}")
 
-error='\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m'
+error="\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m"
 
 data_dir="/www/data"
 rm -f ${data_dir}/*.bak 2>/dev/null
@@ -24,19 +24,20 @@ if [ -f /data/download_url.txt ]; then
 	download_url=$(head -n1 /data/download_url.txt)
 else
 	download_url=""
+	echo "http://127.0.0.1:81/data" > /data/download_url.txt
 fi
 
 if [[ "$1" == "" ]]; then
     if grep 127.0.0.1 /data/download_url.txt && [[ ! -f ${data_dir}/tvbox.zip  ]] && [[ ! -f ${data_dir}/index.zip  ]] && [[ ! -f ${data_dir}/update.zip  ]] && [[ ! -f ${data_dir}/version.txt  ]]; then
-	base_urls=("${base_urls[@]}")
+		base_urls=("${base_urls[@]}")
     else
-	base_urls=("$download_url" "${base_urls[@]}")
+		base_urls=("$download_url" "${base_urls[@]}")
     fi
 else
     if grep 127.0.0.1 /data/download_url.txt; then
     	base_urls=("${base_urls[@]}" "$download_url")
     else
-	base_urls=("$download_url" "${base_urls[@]}")
+		base_urls=("$download_url" "${base_urls[@]}")
     fi
 fi
 
