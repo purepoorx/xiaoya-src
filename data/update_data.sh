@@ -28,13 +28,13 @@ else
 fi
 
 if [[ "$1" == "" ]]; then
-    if grep 127.0.0.1 /data/download_url.txt && [[ ! -f ${data_dir}/tvbox.zip  ]] && [[ ! -f ${data_dir}/index.zip  ]] && [[ ! -f ${data_dir}/update.zip  ]] && [[ ! -f ${data_dir}/version.txt  ]]; then
+    if grep -q 127.0.0.1 /data/download_url.txt && [[ ! -f ${data_dir}/tvbox.zip  ]] && [[ ! -f ${data_dir}/index.zip  ]] && [[ ! -f ${data_dir}/update.zip  ]] && [[ ! -f ${data_dir}/version.txt  ]]; then
 		base_urls=("${base_urls[@]}")
     else
 		base_urls=("$download_url" "${base_urls[@]}")
     fi
 else
-    if grep 127.0.0.1 /data/download_url.txt; then
+    if grep -q 127.0.0.1 /data/download_url.txt; then
     	base_urls=("${base_urls[@]}" "$download_url")
     else
 		base_urls=("$download_url" "${base_urls[@]}")
@@ -44,7 +44,7 @@ fi
 # 获取远端版本号
 success=false
 for base_url in "${base_urls[@]}"; do
-    remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
+    remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -q -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
     if [ $? -eq 0 ] && [ -n "$remote_ver" ]; then
         success=true
         version_url=$base_url
