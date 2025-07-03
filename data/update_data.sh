@@ -20,15 +20,19 @@ rm -f ${data_dir}/*.bak 2>/dev/null
 
 # 没有传入参数（容器启动调用场景），优先使用自定义URL（自定义URL有可能是127.0.0.1，新建容器场景必然是失败，可以继续尝试其他内置的url）
 # 有传入参数（crontab调用场景），优先使用内置URL
+if [ -f /data/download_url.txt ]; then
+	download_url=$(head -n1 /data/download_url.txt)
+else
+	download_url=""
+fi
+
 if [[ "$1" == "" ]]; then
-    [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
     if grep 127.0.0.1 /data/download_url.txt && [[ ! -f ${data_dir}/tvbox.zip  ]] && [[ ! -f ${data_dir}/index.zip  ]] && [[ ! -f ${data_dir}/update.zip  ]] && [[ ! -f ${data_dir}/version.txt  ]]; then
 	base_urls=("${base_urls[@]}")
     else
 	base_urls=("$download_url" "${base_urls[@]}")
     fi
 else
-    [[ -f /data/download_url.txt ]] && download_url=$(head -n1 /data/download_url.txt)
     if grep 127.0.0.1 /data/download_url.txt; then
     	base_urls=("${base_urls[@]}" "$download_url")
     else
