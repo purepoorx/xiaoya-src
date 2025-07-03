@@ -40,7 +40,10 @@ mv soutv /www/cgi-bin/soutv
 mv 115share_internal.txt /data/115share_internal.txt
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
-bash -c "$(curl -s https://xiaoyahelper.zngle.cf/initsoutv.sh)"
+http_code=$(curl -s -o /dev/null -w "%{http_code}" https://xiaoyahelper.zngle.cf/initsoutv.sh)
+if [ "$http_code" -eq 200 ]; then
+    bash -c "$(curl -s https://xiaoyahelper.zngle.cf/initsoutv.sh)"
+fi
 
 if [ -f /data/xiaoya_proxy.txt ]; then
 	xiaoyaproxy=$(head -n1 /data/xiaoya_proxy.txt)

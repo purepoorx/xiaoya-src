@@ -13,8 +13,7 @@ mirror_base_urls=(
 base_urls=($(printf "%s\n" "${mirror_base_urls[@]}" | shuf))
 base_urls=("https://raw.githubusercontent.com/xiaoyaDev/data/main" "${base_urls[@]}" "${alive_urls[@]}")
 
-#error="\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m"
-#error=""
+error="\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m"
 
 data_dir="/www/data"
 rm -f ${data_dir}/*.bak 2>/dev/null
@@ -45,7 +44,7 @@ fi
 # 获取远端版本号
 success=false
 for base_url in "${base_urls[@]}"; do
-    remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -q -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
+    remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
     if [ $? -eq 0 ] && [ -n "$remote_ver" ]; then
         success=true
         version_url=$base_url
