@@ -16,7 +16,7 @@ mv token /token
 
 mv update_data.sh /update_data.sh
 crontab -l |grep -v update_data.sh |grep -v check_uc_cookie.sh  > /tmp/current.crontab
-echo -e "*/15 0,15-23 * * * /update_data.sh x" >> /tmp/current.crontab
+echo -e "*/15 0,10,15-23 * * * /update_data.sh x" >> /tmp/current.crontab
 echo -e "0 */2 * * * /check_uc_cookie.sh update" >> /tmp/current.crontab
 crontab /tmp/current.crontab
 rm /tmp/current.crontab
