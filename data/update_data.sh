@@ -144,6 +144,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
         for base_url in "${base_urls[@]}"; do
             if curl --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" ${base_url}/115share_list.txt >/dev/null 2>&1 && cat "${data_dir}/${a115share_txt_bak}" | grep -q "电影"; then
                 echo "成功下载 115share_list.txt 地址：${base_url}/115share_list.txt"
+		cp ${data_dir}/${a115share_txt_bak} /data/115share_internal.txt
                 mv ${data_dir}/${a115share_txt_bak} ${data_dir}/115share_list.txt
                 break
             else
