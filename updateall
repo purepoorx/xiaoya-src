@@ -37,7 +37,9 @@ mkdir -p /index
 mv search /www/cgi-bin/search
 mv sou /www/cgi-bin/sou
 mv soutv /www/cgi-bin/soutv
-mv 115share_internal.txt /data/115share_internal.txt
+if [ ! -f /data/115share_internal.txt ]; then
+	mv 115share_internal.txt /data/115share_internal.txt
+fi
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
 http_code=$(curl -s -o /dev/null -w "%{http_code}" https://xiaoyahelper.zngle.cf/initsoutv.sh)
