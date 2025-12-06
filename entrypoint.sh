@@ -50,8 +50,9 @@ EOF
 fi
 
 version=$(head -n1 /docker.version)
+data_version=$(head -n1 /data/data/version.txt)
 sqlite3 /opt/alist/data/data.db <<EOF  
-INSERT INTO x_storages VALUES(20001,'/©️ $version',0,'AliyundriveCron',300000,'work','{"refresh_token":"3f46710d73424aaaa18db8ce2e521fff","share_id":"bZY46W7Do4Q","share_pwd":"","root_folder_id":"65380e7eae106ff4f90041d68b666f62e90ad7b5","order_by":"name","order_direction":"ASC"}','','2023-10-24 18:36:56.698065575+00:00',0,'name','ASC','front',0,'302_redirect','');
+INSERT INTO x_storages VALUES(20001,'/©️ 镜像版本: $version 数据版本: $data_version',0,'AliyundriveCron',300000,'work','{"refresh_token":"3f46710d73424aaaa18db8ce2e521fff","share_id":"bZY46W7Do4Q","share_pwd":"","root_folder_id":"65380e7eae106ff4f90041d68b666f62e90ad7b5","order_by":"name","order_direction":"ASC"}','','2023-10-24 18:36:56.698065575+00:00',0,'name','ASC','front',0,'302_redirect','');
 EOF
 
 if [[ -s /data/mytoken.txt ]] && [[ -s /data/myopentoken.txt ]] && [[ -s /data/temp_transfer_folder_id.txt ]]; then
