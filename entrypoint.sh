@@ -49,6 +49,12 @@ EOF
 
 fi
 
+if [ -s /data/strm_dir.txt ]; then
+    sqlite3 /opt/alist/data/data.db <<EOF
+INSERT INTO x_storages VALUES(20002,'/strm',0,'Local',10,'work','{"root_folder_path":"/strm","directory_size":false,"thumbnail":false,"thumb_cache_folder":"","thumb_concurrency":"16","video_thumb_pos":"20%","show_hidden":true,"mkdir_perm":"777","recycle_bin_path":"delete permanently"}','','2022-09-29 20:14:52.313982364+00:00',0,'name','ASC','front',0,'native_proxy','');
+EOF
+fi
+
 version=$(head -n1 /docker.version)
 data_version=$(head -n1 /www/data/version.txt)
 sqlite3 /opt/alist/data/data.db <<EOF  
