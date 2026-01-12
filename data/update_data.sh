@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # 镜像URL列表，不包含官方URL，官方的后面自动添加
-alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
+#alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
+alive_urls=("")
 
 mirror_base_urls=(
     "https://www.gitproxy.click/https://raw.githubusercontent.com/xiaoyaDev/data/main"
@@ -11,8 +12,7 @@ mirror_base_urls=(
 )
 
 base_urls=($(printf "%s\n" "${mirror_base_urls[@]}" | shuf))
-base_urls=("https://raw.githubusercontent.com/xiaoyaDev/data/main" "${base_urls[@]}" "${alive_urls[@]}")
-base_urls=("https://data.xiaoya.pro")
+base_urls=("https://data.xiaoya.pro" "https://raw.githubusercontent.com/xiaoyaDev/data/main" "${base_urls[@]}" "${alive_urls[@]}")
 
 error="\033[93m请确保有科学环境并执行下面命令\ndocker exec xiaoya rm -rf /www/data/version.txt && docker restart xiaoya && docker logs -f -n 100 xiaoya\n\n只要提示下载github数据出错就是百分百没有科学环境或科学环境设置有问题，自行处理解决\033[0m"
 
