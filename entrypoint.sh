@@ -361,11 +361,18 @@ if [[ -f /data/proxy.txt ]] && [[ -s /data/proxy.txt ]]; then
 	export no_proxy="localhost,127.0.0.1,192.168.1.0/24,.aliyundrive.com,.115.com,.quark.cn"
 fi
 
-a=$(lscpu | grep "Model name")
-b=$(grep '^NAME=' /etc/os-release | cut -d'"' -f2 | tr ' ' '_')
-c=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
-d=$(echo $a OS:$b ver:$c)
-e=$(echo $(echo $d |sha256sum | base64 | head -c 16)-$(head -c 5 /dev/urandom | od -An -tu4 | tr -d ' '))
+#a=$(lscpu | grep "Model name")
+#b=$(grep '^NAME=' /etc/os-release | cut -d'"' -f2 | tr ' ' '_')
+#c=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
+#d=$(echo $a OS:$b ver:$c)
+d="xiaoya"
+if [ ! -f /data/.device_id ]; then
+    e=$(echo $(echo $d |sha256sum | base64 | head -c 16)-$(head -c 5 /dev/urandom | od -An -tu4 | tr -d ' '))
+    echo $e > /data/.device_id
+else
+    e=$(cat /data/.device_id)
+fi
+
 curl --retry 3 --max-time 10 -X POST http://quark-uc.xiaoya.pro:9099/save  -F "device_info=$d"  -F "device_id=$e" 
 
 echo "启动容器(Bridge模式)......"
