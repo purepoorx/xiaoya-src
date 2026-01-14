@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # 镜像URL列表，不包含官方URL，官方的后面自动添加
-#alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
-alive_urls=("")
+alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
 
 mirror_base_urls=(
     "https://www.gitproxy.click/https://raw.githubusercontent.com/xiaoyaDev/data/main"
@@ -45,7 +44,7 @@ fi
 # 获取远端版本号
 success=false
 for base_url in "${base_urls[@]}"; do
-    remote_ver=$(curl --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
+    remote_ver=$(curl --retry 3 --max-time 5 --ipv4 ${base_url}/version.txt 2>/dev/null | grep -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$')
     if [ $? -eq 0 ] && [ -n "$remote_ver" ]; then
         success=true
         version_url=$base_url
@@ -82,7 +81,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     # 下载tvbox.zip（失败时尝试其他镜像）
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
-            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${tvbox_zip_bak}" ${base_url}/tvbox.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${tvbox_zip_bak}" >/dev/null 2>&1; then
+            if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${tvbox_zip_bak}" ${base_url}/tvbox.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${tvbox_zip_bak}" >/dev/null 2>&1; then
                 echo "成功下载 tvbox.zip 地址：${base_url}/tvbox.zip"
                 mv ${data_dir}/${tvbox_zip_bak} ${data_dir}/tvbox.zip
                 break
@@ -102,7 +101,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     # 下载update.zip（失败时尝试其他镜像）
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
-            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${update_zip_bak}" ${base_url}/update.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${update_zip_bak}" >/dev/null 2>&1; then
+            if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${update_zip_bak}" ${base_url}/update.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${update_zip_bak}" >/dev/null 2>&1; then
                 echo "成功下载 update.zip 地址：${base_url}/update.zip"
                 mv ${data_dir}/${update_zip_bak} ${data_dir}/update.zip
                 break
@@ -123,7 +122,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     # 下载index.zip（失败时尝试其他镜像）
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
-            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${index_zip_bak}" ${base_url}/index.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${index_zip_bak}" >/dev/null 2>&1; then
+            if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${index_zip_bak}" ${base_url}/index.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${index_zip_bak}" >/dev/null 2>&1; then
                 echo "成功下载 index.zip 地址：${base_url}/index.zip"
                 mv ${data_dir}/${index_zip_bak} ${data_dir}/index.zip
                 break
@@ -143,7 +142,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     # 下载115share_list.txt（失败时尝试其他镜像）
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
-            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" ${base_url}/115share_list.txt >/dev/null 2>&1 && cat "${data_dir}/${a115share_txt_bak}" | grep -q "电影"; then
+            if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${a115share_txt_bak}" ${base_url}/115share_list.txt >/dev/null 2>&1 && cat "${data_dir}/${a115share_txt_bak}" | grep -q "电影"; then
                 echo "成功下载 115share_list.txt 地址：${base_url}/115share_list.txt"
 		cp ${data_dir}/${a115share_txt_bak} /data/115share_internal.txt
                 mv ${data_dir}/${a115share_txt_bak} ${data_dir}/115share_list.txt
@@ -165,7 +164,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     # 下载version.txt（失败时尝试其他镜像）
     if [ "$success" = true ]; then
         for base_url in "${base_urls[@]}"; do
-            if curl --ipv4 --insecure -fsSL -o "${data_dir}/${version_txt_bak}" ${base_url}/version.txt >/dev/null 2>&1 && cat "${data_dir}/${version_txt_bak}" | grep -q -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' ; then
+            if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${version_txt_bak}" ${base_url}/version.txt >/dev/null 2>&1 && cat "${data_dir}/${version_txt_bak}" | grep -q -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' ; then
                 echo "成功下载 version.txt 地址：${base_url}/version.txt"
                 break
             else
