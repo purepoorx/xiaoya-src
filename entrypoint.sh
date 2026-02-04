@@ -56,7 +56,7 @@ EOF
 fi
 
 if [ -s /data/strm.txt ]; then
-	sqlite3 data.db <<EOF
+	sqlite3 /opt/alist/data/data.db <<EOF
 INSERT INTO x_storages VALUES (20003,'/strm', 0, 'StrmList', 30, 'work', '{"txt_path":"/data/strm.txt","db_path":"/opt/alist/data/strm_internal.db"}', 'strm驱动', datetime('now','localtime'), 0, 'name', 'asc', '', 0, 'native', '');
 EOF
 fi
