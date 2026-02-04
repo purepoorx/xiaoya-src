@@ -55,6 +55,12 @@ INSERT INTO x_storages VALUES(20002,'/strm',0,'Local',10,'work','{"root_folder_p
 EOF
 fi
 
+if [ -s /data/strm.txt ]; then
+	sqlite3 data.db <<EOF
+INSERT INTO x_storages VALUES (20003,'/strm', 0, 'StrmList', 30, 'work', '{"txt_path":"/data/strm.txt","db_path":"/opt/alist/data/strm_internal.db"}', 'strm驱动', datetime('now','localtime'), 0, 'name', 'asc', '', 0, 'native', '');
+EOF
+fi
+	
 version=$(head -n1 /docker.version)
 data_version=$(head -n1 /www/data/version.txt)
 sqlite3 /opt/alist/data/data.db <<EOF  
