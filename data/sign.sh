@@ -487,6 +487,125 @@ server  {
     mv -f "$TMP_FILE" "$CONFIG_FILE"
 }
 
+config_block_p() {
+    NEW_CONFIG='
+    location ^~ /p/ {
+        deny all;
+        return 403;
+    }
+'
+
+    # 临时文件
+    TMP_FILE=$(mktemp)
+
+    # 检查文件是否存在
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Error: Nginx configuration file not found at $CONFIG_FILE"
+        exit 1
+    fi
+
+    # 处理文件
+    awk -v new_config="$NEW_CONFIG" '
+    BEGIN {
+        in_target_block = 0
+    }
+
+    # 匹配到目标server行时立即插入配置
+    /server \{/ {
+        print
+        # 立即插入新配置
+        printf("%s",new_config)
+        in_target_block = 1
+        next
+    }
+
+    # 在目标块中检查现有的location
+    in_target_block && /location \^\~ \/p\/ \{/ {
+        # 跳过现有的if块（不打印）
+        while (getline > 0) {
+            if (/}[[:space:]]*$/) {
+                break
+            }
+        }
+	in_target_block = 0
+        next
+    }
+
+    # 其他情况直接打印
+    {
+        print
+    }
+    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
+
+    mv -f "$TMP_FILE" "$CONFIG_FILE"
+}
+
+config_strm() {
+    sign=$1
+    NEW_CONFIG='
+    location ^~ /dav/strm {
+        proxy_pass '"$alist_address"'/dav/strm;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Range $http_range;
+        proxy_set_header If-Range $http_if_range;
+        proxy_set_header Accept-Encoding "";
+        proxy_redirect off;
+        proxy_cache apicache;
+        sub_filter_once off;
+        sub_filter http://xiaoya.host:5678 http://$http_host;
+        sub_filter SIGN_STR '"$sign"';
+        sub_filter_types text/plain;
+    }
+'
+
+    # 临时文件
+    TMP_FILE=$(mktemp)
+
+    # 检查文件是否存在
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Error: Nginx configuration file not found at $CONFIG_FILE"
+        exit 1
+    fi
+
+    # 处理文件
+    awk -v new_config="$NEW_CONFIG" '
+    BEGIN {
+        in_target_block = 0
+    }
+
+    # 匹配到目标server行时立即插入配置
+    /server \{/ {
+        print
+        # 立即插入新配置
+        printf("%s",new_config)
+        in_target_block = 1
+        next
+    }
+
+    # 在目标块中检查现有的location
+    in_target_block && /location \^\~ \/dav\/strm \{/ {
+        # 跳过现有的if块（不打印）
+        while (getline > 0) {
+            if (/}[[:space:]]*$/) {
+                break
+            }
+        }
+	in_target_block = 0
+        next
+    }
+
+    # 其他情况直接打印
+    {
+        print
+    }
+    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
+
+    mv -f "$TMP_FILE" "$CONFIG_FILE"
+}
+
 config_location "$sign"
 config_uri_map "$sign"
 config_geo "$sign"
@@ -500,6 +619,12 @@ config_location_getsignmd5 "$sign"
 
 #增加emby本地直链服务器
 config_emby_local_direct_link_server "$sign"
+
+#不允许访问/p/，没有带签名匿名访问有安全隐患
+config_block_p
+
+#给strm文件内容加上签名
+config_strm "$sign"
 
 if [ -f /run/nginx/nginx.pid ]; then
     nginx -s reload
