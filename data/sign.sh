@@ -556,7 +556,7 @@ config_strm() {
         proxy_cache apicache;
         sub_filter_once off;
         sub_filter http://xiaoya.host:5678 http://$http_host;
-        sub_filter SIGN_STR '"$sign"';
+        sub_filter SIGN_STR "'"$sign"'";
         sub_filter_types text/plain;
     }
 '

@@ -146,7 +146,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
             if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${strm_zip_bak}" ${base_url}/strm.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${strm_zip_bak}" >/dev/null 2>&1; then
                 echo "成功下载 strm.zip 地址：${base_url}/strm.zip"
                 mv ${data_dir}/${strm_zip_bak} /data/strm.zip
-				cd /data && unzip -q strm.zip && rm strm.zip
+				cd /data && unzip -q -o strm.zip && rm strm.zip
                 break
             else
                 if [ "$base_url" == "${base_urls[-1]}" ]; then
