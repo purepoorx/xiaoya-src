@@ -74,6 +74,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     index_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     version_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     a115share_txt_bak="$(cat /proc/sys/kernel/random/uuid)".bak
+	strm_zip_bak="$(cat /proc/sys/kernel/random/uuid)".bak
     
     # 下载状态标记
     success=true
@@ -135,6 +136,27 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
 
         if [ "$success" = false ]; then
             echo "错误：下载github数据 index.zip 出错"
+            echo -e "$error"
+        fi
+    fi
+
+    # 下载strm.zip（失败时尝试其他镜像）
+    if [ "$success" = true ]; then
+        for base_url in "${base_urls[@]}"; do
+            if curl --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${strm_zip_bak}" ${base_url}/strm.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${strm_zip_bak}" >/dev/null 2>&1; then
+                echo "成功下载 strm.zip 地址：${base_url}/strm.zip"
+                mv ${data_dir}/${strm_zip_bak} /data/strm.zip
+				unzip -q /data/strm.zip
+                break
+            else
+                if [ "$base_url" == "${base_urls[-1]}" ]; then
+                    success=false
+                fi
+            fi
+        done
+
+        if [ "$success" = false ]; then
+            echo "错误：下载github数据 strm.zip 出错"
             echo -e "$error"
         fi
     fi
