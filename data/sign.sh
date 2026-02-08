@@ -587,9 +587,98 @@ config_strm() {
 
     # 在目标块中检查现有的location
     in_target_block && /location \^\~ \/dav\/strm \{/ {
+        # 跳过现有的块（不打印）
+        while (getline > 0) {
+            if (/}[[:space:]]*$/) {
+                break
+            }
+        }
+	in_target_block = 0
+        next
+    }
+
+    # 其他情况直接打印
+    {
+        print
+    }
+    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
+
+    mv -f "$TMP_FILE" "$CONFIG_FILE"
+}
+
+config_strm_lua() {
+    #sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+    #apk add --no-cache nginx-mod-http-lua >/dev/null 2>&1
+    sign=$1
+    NEW_CONFIG='
+    location ^~ /dav/strm {
+        proxy_pass '"$alist_address"'/dav/strm;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Range $http_range;
+        proxy_set_header If-Range $http_if_range;
+        proxy_set_header Accept-Encoding "";
+        header_filter_by_lua_block {
+            ngx.header.content_length = nil
+        }
+        body_filter_by_lua_block {
+            local raw_host_str = "http://xiaoya.host:5678"
+            local raw_sign_str = "SIGN_STR"
+            local new_sign_str = "'"$sign"'"
+            local cur_host = "http://" .. (ngx.var.http_host or "")
+            if ngx.arg[1] ~= "" then
+                local data = ngx.arg[1]
+                local total_diff = (#cur_host - #raw_host_str) + (#new_sign_str - #raw_sign_str)
+                data = string.gsub(data, raw_host_str, cur_host)
+                data = string.gsub(data, raw_sign_str, new_sign_str)
+                data = string.gsub(data, "(##+)", function(m)
+                    if #m >= 30 then
+                        local new_count = #m - total_diff
+                        return string.rep("#", math.max(0, new_count))
+                    end
+                    return m
+                end)
+                ngx.arg[1] = data
+            end
+        }
+    }
+'
+
+    # 临时文件
+    TMP_FILE=$(mktemp)
+
+    # 检查文件是否存在
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Error: Nginx configuration file not found at $CONFIG_FILE"
+        exit 1
+    fi
+
+    # 处理文件
+    awk -v new_config="$NEW_CONFIG" '
+    BEGIN {
+        in_target_block = 0
+    }
+
+    # 匹配到目标server行时立即插入配置
+    /server \{/ {
+        print
+        # 立即插入新配置
+        printf("%s",new_config)
+        in_target_block = 1
+        next
+    }
+
+    # 在目标块中检查现有的location
+    in_target_block && /location \^\~ \/dav\/strm \{/ {
         # 跳过现有的if块（不打印）
         while (getline > 0) {
             if (/}[[:space:]]*$/) {
+                block_num = block_num + 1
+            }
+            if (block_num == 3) {
+                block_num = 0
                 break
             }
         }
@@ -624,7 +713,7 @@ config_emby_local_direct_link_server "$sign"
 config_block_p
 
 #给strm文件内容加上签名
-config_strm "$sign"
+config_strm_lua "$sign"
 
 if [ -f /run/nginx/nginx.pid ]; then
     nginx -s reload
