@@ -627,7 +627,7 @@ config_strm_lua() {
             local raw_host_str = "http://xiaoya.host:5678"
             local raw_sign_str = "SIGN_STR"
             local new_sign_str = "'"$sign"'"
-            local cur_host = "http://" .. (ngx.var.http_host or "")
+            local cur_host = ngx.var.client_scheme .. "://" .. (ngx.var.http_host or "")
             if ngx.arg[1] ~= "" then
                 local data = ngx.arg[1]
                 local total_diff = (#cur_host - #raw_host_str) + (#new_sign_str - #raw_sign_str)
