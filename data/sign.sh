@@ -695,6 +695,69 @@ config_strm_lua() {
     mv -f "$TMP_FILE" "$CONFIG_FILE"
 }
 
+config_danmu_api() {
+    DANMU_API="DANMU_API"
+    if [ -f /data/danmu_api.txt ];then
+        DANMU_API=$(cat /data/danmu_api.txt)
+    fi
+    NEW_CONFIG='
+            location /tvbox {
+                proxy_pass '"$(cat "$CONFIG_FILE" | grep -o "http://([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]{1,5})?/tvbox" | head -n1)"';
+                proxy_set_header Accept-Encoding "";
+                sub_filter "DOCKER_ADDRESS" $client_scheme://$http_host;
+                sub_filter "DANMU_API" '"$DANMU_API"';
+                sub_filter_once off;
+                sub_filter_types *;
+                proxy_cache apicache;
+            }
+'
+
+    # 临时文件
+    TMP_FILE=$(mktemp)
+
+    # 检查文件是否存在
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "Error: Nginx configuration file not found at $CONFIG_FILE"
+        exit 1
+    fi
+
+    # 处理文件
+    awk -v new_config="$NEW_CONFIG" '
+    BEGIN {
+        in_target_block = 0
+    }
+
+    # 匹配到目标server行时立即插入配置
+    /server \{/ {
+        print
+        # 立即插入新配置
+        printf("%s",new_config)
+        in_target_block = 1
+        next
+    }
+
+    # 在目标块中检查现有的location /assets
+    in_target_block && /location \/tvbox/ {
+        # 跳过现有的if块（不打印）
+        while (getline > 0) {
+            if (/}[[:space:]]*$/) {
+                break
+            }
+        }
+	in_target_block = 0
+        next
+    }
+
+    # 其他情况直接打印
+    {
+        print
+    }
+    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
+
+    mv -f "$TMP_FILE" "$CONFIG_FILE"
+
+}
+
 config_location "$sign"
 config_uri_map "$sign"
 config_geo "$sign"
@@ -714,6 +777,9 @@ config_block_p
 
 #给strm文件内容加上签名
 config_strm_lua "$sign"
+
+#弹幕API替换
+config_danmu_api
 
 if [ -f /run/nginx/nginx.pid ]; then
     nginx -s reload
