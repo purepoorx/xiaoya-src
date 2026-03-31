@@ -8,7 +8,7 @@ async function redirect2Pan(r) {
 	const ua = r.headersIn["User-Agent"];
     const cookie = r.headersIn["Cookie"];
     const all = JSON.stringify(r.headersIn);
-    //r.warn(`all: ${all}`);
+    r.warn(`all: ${all}`);
 
     //fetch mount emby file path
     const itemId = /[\d]+/.exec(r.uri)[0];
@@ -17,7 +17,7 @@ async function redirect2Pan(r) {
     //infuse用户需要填写下面的api_key, 感谢@amwamw968
     if ((api_key === null) || (api_key === undefined)) {
         api_key = 'INFUSE_API_KEY';//这里填自己的API KEY
-        //r.error(`api key for Infuse: ${api_key}`);
+        r.error(`api key for Infuse: ${api_key}`);
     }
     
     if(r.uri.indexOf("Subtitles")!=-1){
@@ -25,49 +25,28 @@ async function redirect2Pan(r) {
         return;
     }
     const itemInfoUri = `${embyHost}/emby/Items/${itemId}/PlaybackInfo?api_key=${api_key}`;
-    //r.error(`itemInfoUri: ${itemInfoUri}`);
+    r.error(`itemInfoUri: ${itemInfoUri}`);
     let embyRes = await fetchEmbyFilePath(itemInfoUri, mediaSourceId);
     if (embyRes.startsWith('error')) {
-        //r.error(embyRes);
+        r.error(embyRes);
         r.return(500, embyRes);
         return;
     }
-    //r.error(`mount emby file path: ${embyRes}`);
+    r.error(`mount emby file path: ${embyRes}`);
 
     var doesNotContainHttp = !embyRes.includes("http");
     var doesNotContainDOCKER = !embyRes.includes("DOCKER_ADDRESS");
-	var containQUARK = embyRes.includes("夸克");
-	var containQUARK2 = embyRes.includes("%E5%A4%B8%E5%85%8B");
-    var containUC = embyRes.includes("（UC）");
-    var containUC2 = embyRes.includes("%EF%BC%88UC%EF%BC%89");
-    var contain115 = embyRes.includes("我的115");
-    var contain1152 = embyRes.includes("%E6%88%91%E7%9A%84115");
-	var contain1153 = embyRes.includes("（115）");
-	var contain1154 = embyRes.includes("%EF%BC%88115%EF%BC%89");
+    const cloudRegit = /(夸克|UC|我的115|（115）|%E5%A4%B8%E5%85%8B|%EF%BC%88UC%EF%BC%89|%E6%88%91%E7%9A%84115|%EF%BC%88115%EF%BC%89)/i;
+    var isCloudPath = cloudRegit.test(embyRes);
 
-    if(containQUARK || containQUARK2){
-    	//r.warn(`夸克 跳转 ${embyRes}`);
-		let quark_302 = embyRes.replace('5678/d/','5244/p/');
-		//r.return(302, `${embyRes}`, {'User-Agent': ua});
+    if (isCloudPath) {
+        r.warn(`匹配到网盘路径: ${embyRes}`);
         r.internalRedirect("@backend");
         return;
     }
-/*
-    if(contain115 || contain1152 || contain1153 || contain1154){ 
-        //r.warn(`115 跳转 ${embyRes}`);                                                                                                          
-        r.return(302, `${embyRes}`);          
-        //r.internalRedirect("@backend");                                                                                       
-        return;                              
-    }
-*/
-	if (containUC || containUC2){
-        //r.warn(`UC 跳转 ${embyRes}`);
-		r.internalRedirect("@backend");
-		return;
-	}
 
     if(doesNotContainHttp && doesNotContainDOCKER){
-		//r.warn(`跳转到本地链接`);
+		r.warn(`跳转到本地链接`);
         r.internalRedirect("@backend");
         return;
     }
@@ -75,14 +54,14 @@ async function redirect2Pan(r) {
     const fs = require('fs');                                                                                                       
     fs.access('/data/ali2115.txt', fs.constants.F_OK, (err) => {
             if (!err) {              
-                    //r.warn(`阿里跳转115`);
+                    r.warn(`阿里跳转115`);
                     r.return(302, `${embyRes}`);
 					return;
             }
     });
 */
     if (embyRes.indexOf("/static/http")!=-1) {
-        //r.warn(`返回cd2链接: ${embyRes}`);
+        r.warn(`返回cd2链接: ${embyRes}`);
         r.return(302, `${(embyRes)}`);
         return;
     }
@@ -90,17 +69,17 @@ async function redirect2Pan(r) {
     const alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
 	
     let alistRes = await fetchXYApi(`${alistFilePath}`, `${ua}`, `${cookie}`);
-    //r.warn(`xiaoya容器返回: ${alistRes}`); 
+    r.warn(`xiaoya容器返回: ${alistRes}`); 
 
        
     if (!alistRes.startsWith('error')) {
 	if(alistRes.indexOf("http")!=-1){
-		//r.warn(`跳转到小雅链接: ${alistRes}`);
+		r.warn(`跳转到小雅链接: ${alistRes}`);
 		r.return(302, alistRes);
 		return;
 	}
         if (alistRes.includes("object not found")) {                                                                                         
-                //r.warn(`strm 文件内路径错误，请检查资源是否被删除，或被更名`); 
+                r.warn(`strm 文件内路径错误，请检查资源是否被删除，或被更名`); 
                 r.return(302,"http://image.xiaoya.pro/404.mp4");                                                                             
                 return;                                                                                                                      
         }
@@ -108,7 +87,7 @@ async function redirect2Pan(r) {
     }
 	
     if (alistRes.startsWith('error401')) {
-        //r.error(alistRes);
+        r.error(alistRes);
         r.return(401, alistRes);
         return;
     }
@@ -116,25 +95,25 @@ async function redirect2Pan(r) {
         const filePath = alistFilePath.substring(alistFilePath.indexOf('/', 1));
         const foldersRes = await fetchAlistPathApi(alistApiPath, '/', alistPwd);
         if (foldersRes.startsWith('error')) {
-            //r.error(foldersRes);
+            r.error(foldersRes);
             r.return(500, foldersRes);
             return;
         }
         const folders = foldersRes.split(',').sort();
         for (let i = 0; i < folders.length; i++) {
-            //r.error(`try to fetch alist path from /${folders[i]}${filePath}`);
+            r.error(`try to fetch alist path from /${folders[i]}${filePath}`);
             const driverRes = await fetchAlistPathApi(alistApiPath, `/${folders[i]}${filePath}`, alistPwd);
             if (!driverRes.startsWith('error')) {
-                //r.error(`redirect to: ${driverRes}`);
+                r.error(`redirect to: ${driverRes}`);
                 r.return(302, driverRes);
                 return;
             }
         }
-        //r.error(alistRes);
+        r.error(alistRes);
         r.return(404, alistRes);
         return;
     }
-    //r.error(alistRes);
+    r.error(alistRes);
     r.return(500, alistRes);
     return;
 }
