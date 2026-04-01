@@ -211,14 +211,15 @@ async function fetchEmbyFilePath(itemInfoUri, mediaSourceId) {
 async function fetchXYApi(xyurl,ua,cookie) {
     try {                                 
         const res = await ngx.fetch(xyurl, { headers: { "Content-Type": 'application/json;charset=utf-8', "User-Agent": ua, "X-Alist-OriUA": ua}, max_response_body_size: 65535} );
-        if (res.status == 302) { 
-            if (res.statusText == "Found") {                    
-                return res.headers.Location;            
-            }                                                 
-            return (`error: xy_api return 304 destination is null`);
+        if (res.status >= 301 && res.status <= 307) {
+            const loc = res.headers["Location"] || res.headers["location"];
+            if (loc) {
+                return loc;
+            }
+            return "error: redirect status " + res.status + " but Location header missing";
         }
         else {
-		return res.text();
+			return res.text();
             //return (`error: xy_api return 302 failed: ${res.status} ${res.statusText}`);
         }                              
     }          
