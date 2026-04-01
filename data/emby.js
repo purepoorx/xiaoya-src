@@ -36,14 +36,35 @@ async function redirect2Pan(r) {
 
     var doesNotContainHttp = !embyRes.includes("http");
     var doesNotContainDOCKER = !embyRes.includes("DOCKER_ADDRESS");
-    const cloudRegit = /(夸克|UC|我的115|（115）|%E5%A4%B8%E5%85%8B|%EF%BC%88UC%EF%BC%89|%E6%88%91%E7%9A%84115|%EF%BC%88115%EF%BC%89)/i;
-    var isCloudPath = cloudRegit.test(embyRes);
+	var containQUARK = embyRes.includes("夸克");
+	var containQUARK2 = embyRes.includes("%E5%A4%B8%E5%85%8B");
+    var containUC = embyRes.includes("（UC）");
+    var containUC2 = embyRes.includes("%EF%BC%88UC%EF%BC%89");
+    var contain115 = embyRes.includes("我的115");
+    var contain1152 = embyRes.includes("%E6%88%91%E7%9A%84115");
+	var contain1153 = embyRes.includes("（115）");
+	var contain1154 = embyRes.includes("%EF%BC%88115%EF%BC%89");
 
-    if (isCloudPath) {
-        r.warn(`匹配到网盘路径: ${embyRes}`);
+    if(containQUARK || containQUARK2){
+    	r.warn(`夸克 跳转 ${embyRes}`);
+		let quark_302 = embyRes.replace('5678/d/','5244/p/');
+		//r.return(302, `${embyRes}`, {'User-Agent': ua});
         r.internalRedirect("@backend");
         return;
     }
+/*
+    if(contain115 || contain1152 || contain1153 || contain1154){ 
+        r.warn(`115 跳转 ${embyRes}`);                                                                                                          
+        r.return(302, `${embyRes}`);          
+        //r.internalRedirect("@backend");                                                                                       
+        return;                              
+    }
+*/
+	if (containUC || containUC2){
+        r.warn(`UC 跳转 ${embyRes}`);
+		r.internalRedirect("@backend");
+		return;
+	}
 
     if(doesNotContainHttp && doesNotContainDOCKER){
 		r.warn(`跳转到本地链接`);
