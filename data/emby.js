@@ -44,6 +44,13 @@ async function redirect2Pan(r) {
     var contain1152 = embyRes.includes("%E6%88%91%E7%9A%84115");
 	var contain1153 = embyRes.includes("（115）");
 	var contain1154 = embyRes.includes("%EF%BC%88115%EF%BC%89");
+	var contain115helper = embyRes.includes("P115StrmHelper");
+	
+	if(contain115helper) {
+		r.warn(`115StrmHelper 跳转 ${embyRes}`);
+		r.internalRedirect("@backend");
+        return;
+    }
 
     if(containQUARK || containQUARK2){
     	r.warn(`夸克 跳转 ${embyRes}`);
