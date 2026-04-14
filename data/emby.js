@@ -46,9 +46,19 @@ async function redirect2Pan(r) {
 	var contain1154 = embyRes.includes("%EF%BC%88115%EF%BC%89");
 	var contain115helper = embyRes.includes("P115StrmHelper");
 	
-	if(contain115helper) {
-		r.warn(`115StrmHelper 跳转 ${embyRes}`);
-		r.internalRedirect("@backend");
+    if(contain115helper) {
+        r.warn(`115StrmHelper 发现链接: ${embyRes}`);
+        let helperRedirectUrl = await fetchXYApi(embyRes, `${ua}`, `${cookie}`);
+        if (helperRedirectUrl.startsWith('error')) {
+            r.error(`获取115直链失败: ${helperRedirectUrl}`);
+            // 如果获取失败，可以选择回退到原方案，或者报错
+            r.internalRedirect("@backend");
+            return;
+        }
+
+        r.warn(`115StrmHelper 成功获取直链，302跳转至: ${helperRedirectUrl}`);
+        r.return(302, helperRedirectUrl);
+
         return;
     }
 
@@ -234,5 +244,4 @@ async function fetchXYApi(xyurl,ua,cookie) {
         return (`error: xy_api fetch aliyun direct link failed,  ${error}`);
     }                                                                                      
 } 
-
 export default { redirect2Pan };
