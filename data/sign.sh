@@ -85,15 +85,50 @@ gen_api_get_list_sub_filter() {
         )
 }
 
-config_location() {
+config_location_lua() {
     sign=$1
     if [ -z "$sign" ]; then
-        NEW_CONFIG=''
+        NEW_CONFIG='
+        location /d/ {
+            set $fixed_uri "";
+            rewrite_by_lua_block {
+                local raw_uri = ngx.var.request_uri
+                if string.find(raw_uri, "%%25%x%x") then
+                    raw_uri = string.gsub(raw_uri, "%%25(%x%x)", "%%%1")
+                end
+                ngx.var.fixed_uri = raw_uri
+            }
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Range $http_range;
+            proxy_set_header If-Range $http_if_range;
+            proxy_pass '"$alist_address"'$fixed_uri;
+        }
+'
     else
         NEW_CONFIG='
-                if ($modified_uri ~ ^/d/[^\\?]*(?!.*sign='"$sign"'($|&))) {
-                    return 302 http://'"$docker_ip"':45678$request_uri;
-                }
+        location /d/ {
+            set $fixed_uri "";
+            rewrite_by_lua_block {
+                local raw_uri = ngx.var.request_uri
+                if string.find(raw_uri, "%%25%x%x") then
+                    raw_uri = string.gsub(raw_uri, "%%25(%x%x)", "%%%1")
+                end
+                ngx.var.fixed_uri = raw_uri
+                local args = ngx.var.args or ""
+                local target_sign = "'"$sign"'"
+                if not string.find(args, "sign=" .. target_sign) then
+                    return ngx.redirect("http://'"$docker_ip"':45678" .. ngx.var.request_uri, 302)
+                end
+            }
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Range $http_range;
+            proxy_set_header If-Range $http_if_range;
+            proxy_pass '"$alist_address"'$fixed_uri;
+        }
 '
     fi
 
@@ -110,10 +145,11 @@ config_location() {
     awk -v new_config="$NEW_CONFIG" '
     BEGIN {
         in_target_block = 0
+        block_num = 0
     }
 
-    # 匹配到目标location行时立即插入配置
-    /location \/d\/ \{/ {
+    # 匹配到目标server行时立即插入配置
+    /server \{/ {
         print
         # 立即插入新配置
         printf("%s",new_config)
@@ -121,11 +157,15 @@ config_location() {
         next
     }
 
-    # 在目标块中检查现有的if (sign=)条件
-    in_target_block && /if.*sign=/ {
+    # 在目标块中检查现有的location /assets
+    in_target_block && /location \/d\/ \{/ {
         # 跳过现有的if块（不打印）
         while (getline > 0) {
             if (/}[[:space:]]*$/) {
+                block_num = block_num + 1
+            }
+            if (block_num == 2) {
+                block_num = 0
                 break
             }
         }
@@ -760,7 +800,7 @@ config_danmu_api() {
 
 }
 
-config_location "$sign"
+config_location_lua "$sign"
 config_uri_map "$sign"
 config_geo "$sign"
 
