@@ -552,6 +552,7 @@ config_strm() {
         proxy_set_header Range $http_range;
         proxy_set_header If-Range $http_if_range;
         proxy_set_header Accept-Encoding "";
+        proxy_hide_header Content-Disposition;
         proxy_redirect off;
         proxy_cache apicache;
         sub_filter_once off;
@@ -620,6 +621,7 @@ config_strm_lua() {
         proxy_set_header Range $http_range;
         proxy_set_header If-Range $http_if_range;
         proxy_set_header Accept-Encoding "";
+        proxy_hide_header Content-Disposition;
         header_filter_by_lua_block {
             ngx.header.content_length = nil
         }
