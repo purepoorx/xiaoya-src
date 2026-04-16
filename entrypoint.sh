@@ -379,7 +379,7 @@ else
     e=$(cat /data/.device_id)
 fi
 
-curl --retry 3 --max-time 10 -X POST http://quark-uc.xiaoya.pro:9099/save  -F "device_info=$d"  -F "device_id=$e" 
+curl -s --retry 3 --max-time 10 -X POST http://quark-uc.xiaoya.pro:9099/save  -F "device_info=$d"  -F "device_id=$e" 
 
 echo "启动容器(Bridge模式)......"
 
