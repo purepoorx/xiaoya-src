@@ -53,7 +53,7 @@ if [ ! -f /data/nosign.txt ] && [ -f /data/guestpass.txt ] && [ -f /data/guestlo
 
 fi
 
-alist_address="http://127.0.0.1:$(cat "$CONFIG_FILE" | grep -o ':[0-9]*/d/' | tr -d ':' | awk -F'/' '{print $1}'| head -n1)"
+alist_address="http://127.0.0.1:$(cat "$CONFIG_FILE" | grep -o ':[0-9]*/dav' | tr -d ':' | awk -F'/' '{print $1}'| head -n1)"
 docker_ip="127.0.0.1"
 if [ "$alist_address"x = "http://127.0.0.1:5244"x ]; then
     docker_ip=$(ifconfig "eth0" | grep "inet addr" | grep -o "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -n1)
@@ -83,104 +83,6 @@ gen_api_get_list_sub_filter() {
         cat /opt/alist/alist | grep -ao '[a-zA-Z]*\.post\("/fs/get".*?\)'
         cat /opt/alist/alist | grep -ao '[a-zA-Z]*\.post\("/fs/list".*?\)'
         )
-}
-
-config_location_lua() {
-    sign=$1
-    if [ -z "$sign" ]; then
-        NEW_CONFIG='
-        location /d/ {
-            set $fixed_uri "";
-            rewrite_by_lua_block {
-                local raw_uri = ngx.var.request_uri
-                if string.find(raw_uri, "%%25%x%x") then
-                    raw_uri = string.gsub(raw_uri, "%%25(%x%x)", "%%%1")
-                end
-                ngx.var.fixed_uri = raw_uri
-            }
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header Range $http_range;
-            proxy_set_header If-Range $http_if_range;
-            proxy_pass '"$alist_address"'$fixed_uri;
-        }
-'
-    else
-        NEW_CONFIG='
-        location /d/ {
-            set $fixed_uri "";
-            rewrite_by_lua_block {
-                local raw_uri = ngx.var.request_uri
-                if string.find(raw_uri, "%%25%x%x") then
-                    raw_uri = string.gsub(raw_uri, "%%25(%x%x)", "%%%1")
-                end
-                ngx.var.fixed_uri = raw_uri
-                local args = ngx.var.args or ""
-                local target_sign = "'"$sign"'"
-                if not string.find(args, "sign=" .. target_sign) then
-                    return ngx.redirect("http://'"$docker_ip"':45678" .. ngx.var.request_uri, 302)
-                end
-            }
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header Host $http_host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header Range $http_range;
-            proxy_set_header If-Range $http_if_range;
-            proxy_pass '"$alist_address"'$fixed_uri;
-        }
-'
-    fi
-
-    # 临时文件
-    TMP_FILE=$(mktemp)
-
-    # 检查文件是否存在
-    if [ ! -f "$CONFIG_FILE" ]; then
-        echo "Error: Nginx configuration file not found at $CONFIG_FILE"
-        exit 1
-    fi
-
-    # 处理文件
-    awk -v new_config="$NEW_CONFIG" '
-    BEGIN {
-        in_target_block = 0
-        block_num = 0
-    }
-
-    # 匹配到目标server行时立即插入配置
-    /server \{/ {
-        print
-        # 立即插入新配置
-        printf("%s",new_config)
-        in_target_block = 1
-        next
-    }
-
-    # 在目标块中检查现有的location /assets
-    in_target_block && /location \/d\/ \{/ {
-        # 跳过现有的if块（不打印）
-        while (getline > 0) {
-            if (/}[[:space:]]*$/) {
-                block_num = block_num + 1
-            }
-            if (block_num == 2) {
-                block_num = 0
-                break
-            }
-        }
-	in_target_block = 0
-        next
-    }
-
-    # 其他情况直接打印
-    {
-        print
-    }
-    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
-
-    mv -f "$TMP_FILE" "$CONFIG_FILE"
-
 }
 
 config_geo() {
@@ -485,40 +387,29 @@ server  {
 '
     fi
 
-    # 临时文件
     TMP_FILE=$(mktemp)
 
-    # 检查文件是否存在
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "Error: Nginx configuration file not found at $CONFIG_FILE"
         exit 1
     fi
 
-    # 处理文件
     awk -v new_config="$NEW_CONFIG" '
     BEGIN {
-        print
-        # 立即插入新配置
-        printf("%s",new_config)
-        block_num = 0
+        if (new_config != "") {
+            print new_config
+        }
     }
 
-    # 在目标块中检查现有的server块
     /server  \{/ {
-        # 跳过现有的块（不打印）
-        while (getline > 0) {
-            if (/}[[:space:]]*$/) {
-                block_num = block_num + 1
-            }
-            if (block_num == 2) {
-                block_num = 0
-                break
-            }
+        depth = 0
+        depth += (gsub(/\{/, "{", $0) - gsub(/\}/, "}", $0))
+        while (depth > 0 && (getline > 0)) {
+            depth += (gsub(/\{/, "{", $0) - gsub(/\}/, "}", $0))
         }
         next
     }
 
-    # 其他情况直接打印
     {
         print
     }
@@ -648,8 +539,6 @@ config_strm() {
 }
 
 config_strm_lua() {
-    #sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-    #apk add --no-cache nginx-mod-http-lua >/dev/null 2>&1
     sign=$1
     NEW_CONFIG='
     location ^~ /dav/strm {
@@ -688,47 +577,42 @@ config_strm_lua() {
     }
 '
 
-    # 临时文件
     TMP_FILE=$(mktemp)
 
-    # 检查文件是否存在
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "Error: Nginx configuration file not found at $CONFIG_FILE"
         exit 1
     fi
 
-    # 处理文件
     awk -v new_config="$NEW_CONFIG" '
     BEGIN {
         in_target_block = 0
     }
 
-    # 匹配到目标server行时立即插入配置
+    # 匹配到目标server行时立即插入新配置
     /server \{/ {
         print
-        # 立即插入新配置
-        printf("%s",new_config)
+        printf("%s", new_config)
         in_target_block = 1
         next
     }
 
-    # 在目标块中检查现有的location
+    # 在目标server块中匹配到旧的 location ^~ /dav/strm {
     in_target_block && /location \^\~ \/dav\/strm \{/ {
-        # 跳过现有的if块（不打印）
-        while (getline > 0) {
-            if (/}[[:space:]]*$/) {
-                block_num = block_num + 1
-            }
-            if (block_num == 3) {
-                block_num = 0
-                break
-            }
+        depth = 0
+        # 计算当前行括号差值
+        depth += (gsub(/\{/, "{", $0) - gsub(/\}/, "}", $0))
+        
+        # 只要括号没配对完（depth > 0），就持续读取并跳过
+        while (depth > 0 && (getline > 0)) {
+            depth += (gsub(/\{/, "{", $0) - gsub(/\}/, "}", $0))
         }
-	in_target_block = 0
+        
+        in_target_block = 0
         next
     }
 
-    # 其他情况直接打印
+    # 其他情况原样打印
     {
         print
     }
@@ -798,6 +682,86 @@ config_danmu_api() {
 
     mv -f "$TMP_FILE" "$CONFIG_FILE"
 
+}
+
+config_location_lua() {
+    sign=$1
+    if [ -z "$sign" ]; then
+        NEW_CONFIG='
+        location /d/ {
+            set $fixed_uri "";
+            rewrite_by_lua_block {
+                local raw_uri = ngx.var.request_uri
+                if string.find(raw_uri, "%%25%x%x") then
+                    raw_uri = string.gsub(raw_uri, "%%25(%x%x)", "%%%1")
+                end
+                ngx.var.fixed_uri = raw_uri
+            }
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Range $http_range;
+            proxy_set_header If-Range $http_if_range;
+            proxy_pass '"$alist_address"'$fixed_uri;
+        }
+'
+    else
+        NEW_CONFIG='
+        location /d/ {
+            set $fixed_uri "";
+            rewrite_by_lua_block {
+                local raw_uri = ngx.var.request_uri
+                if string.find(raw_uri, "%%25%x%x") then
+                    raw_uri = string.gsub(raw_uri, "%%25(%x%x)", "%%%1")
+                end
+                ngx.var.fixed_uri = raw_uri
+                local args = ngx.var.args or ""
+                local target_sign = "'"$sign"'"
+                if not string.find(args, "sign=" .. target_sign) then
+                    return ngx.redirect("http://'"$docker_ip"':45678" .. ngx.var.request_uri, 302)
+                end
+            }
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Range $http_range;
+            proxy_set_header If-Range $http_if_range;
+            proxy_pass '"$alist_address"'$fixed_uri;
+        }
+'
+    fi
+
+    TMP_FILE=$(mktemp)
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+        exit 1
+    fi
+
+    awk -v new_config="$NEW_CONFIG" '
+    BEGIN {
+        in_target_block = 0
+    }
+    /server \{/ {
+        print
+        printf("%s", new_config)
+        in_target_block = 1
+        next
+    }
+    in_target_block && /location \/d\/ \{/ {
+        depth = 0
+        depth += (gsub(/\{/, "{", $0) - gsub(/\}/, "}", $0))
+        while (depth > 0 && (getline > 0)) {
+            depth += (gsub(/\{/, "{", $0) - gsub(/\}/, "}", $0))
+        }
+        in_target_block = 0
+        next
+    }
+    {
+        print
+    }
+    ' "$CONFIG_FILE" | sed '/^[[:space:]]*$/N; /^\n$/D' > "$TMP_FILE"
+
+    mv -f "$TMP_FILE" "$CONFIG_FILE"
 }
 
 config_location_lua "$sign"
