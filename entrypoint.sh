@@ -27,8 +27,8 @@ sqlite3 /opt/alist/data/data.db <<EOF
 delete from x_storages where driver = 'PikPakShare' OR driver = 'PikPak';
 EOF
 if [[ -f /data/pikpak.txt ]] && [[ -s /data/pikpak.txt ]]; then
-	/pikpak
-	echo `date` "User's own PikPak account has been updated into database successfully"
+	#/pikpak
+	#echo `date` "User's own PikPak account has been updated into database successfully"
 fi
 
 if [ -f /data/guestlogin.txt ]; then
