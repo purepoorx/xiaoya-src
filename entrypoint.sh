@@ -1,6 +1,9 @@
 #!/bin/bash
 
 /updateall
+mkdir -p /tmp/xy_cache
+chmod 777 /tmp/xy_cache
+chown nginx:nginx /tmp/xy_cache
 #/bin/busybox-extras httpd -p 81 -h /www
 /sign.sh
 /usr/sbin/nginx
