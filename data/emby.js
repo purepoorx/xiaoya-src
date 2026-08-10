@@ -31,7 +31,7 @@ function getCacheKey(url, ua) {
     }
     
     pathPart = pathPart.replace(/[\/\\&=:]/g, '_');
-    pathPart = pathPart.substring(0, 60);
+    pathPart = pathPart.substring(0, 240);
     let hash = 0;
     const str = url + '|' + (ua || 'unknown');
     for (let i = 0; i < str.length; i++) {
@@ -256,8 +256,11 @@ async function redirect2Pan(r) {
     }
     
     const mediaSourceId = r.args.MediaSourceId;
-    const api_key = r.args.api_key || infuseApiKey;
-    r.error(`api key: ${api_key}`);
+    let api_key = r.args.api_key;
+    if ((api_key === null) || (api_key === undefined)) {
+        api_key = 'INFUSE_API_KEY';//这里填自己的API KEY
+        r.error(`api key for Infuse: ${api_key}`);
+    }
 
     if (r.uri.includes("Subtitles")) {
         r.internalRedirect("@backend");
