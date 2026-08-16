@@ -1,10 +1,9 @@
 const fs = require('fs');
-
-// ---------- 配置 ----------
 const CACHE_DIR = '/tmp/xy_cache/';
 const CACHE_TTL = 4 * 60 * 60 * 1000;
-const MAX_CACHE_SIZE = 1000;
-const CLEANUP_THRESHOLD = 1500; // 超过此值才清理
+const MAX_CACHE_SIZE = 100;
+const CLEANUP_THRESHOLD = 150;
+const PRELOAD_THRESHOLD = 80; // 播放进度超过 80% 时预加载下一集
 
 (function initCacheDir() {
     try {
@@ -12,10 +11,16 @@ const CLEANUP_THRESHOLD = 1500; // 超过此值才清理
     } catch (e) {}
 })();
 
-function joinPath(...parts) {
-    const filtered = parts.filter(p => p !== '' && p !== null && p !== undefined);
+function joinPath() {
+    var parts = Array.prototype.slice.call(arguments);
+    var filtered = [];
+    for (var i = 0; i < parts.length; i++) {
+        if (parts[i] !== '' && parts[i] !== null && parts[i] !== undefined) {
+            filtered.push(parts[i]);
+        }
+    }
     if (filtered.length === 0) return '';
-    let result = filtered.join('/');
+    var result = filtered.join('/');
     result = result.replace(/\/+/g, '/');
     if (result.length > 1 && result.endsWith('/')) {
         result = result.slice(0, -1);
@@ -23,38 +28,33 @@ function joinPath(...parts) {
     return result;
 }
 
-function getCacheKey(url, ua) {
-    let pathPart = url.replace(/^https?:\/\/[^\/]+\/d\//, ''); // 去掉 http://127.0.0.1:80/d/
-    const queryIdx = pathPart.indexOf('?');
+function getCacheKey(url, ua, itemId) {
+    var cleanUrl = url;
+    var queryIdx = url.indexOf('?');
     if (queryIdx !== -1) {
-        pathPart = pathPart.substring(0, queryIdx);
+        cleanUrl = url.substring(0, queryIdx);
     }
-    
-    pathPart = pathPart.replace(/[\/\\&=:]/g, '_');
-    pathPart = pathPart.substring(0, 240);
-    let hash = 0;
-    const str = url + '|' + (ua || 'unknown');
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash = hash & hash;
+    cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
+    var pathStart = cleanUrl.indexOf('/');
+    if (pathStart !== -1) {
+        cleanUrl = cleanUrl.substring(pathStart);
     }
-    const hashStr = (hash >>> 0).toString(16).padStart(8, '0');
-    return pathPart + '_' + ua.replace(' ', '-').replace('/', '-') + '_' + hashStr;
-}
-
-function getCacheFilePath(cacheKey) {
-    return joinPath(CACHE_DIR, cacheKey + '.json');
+    if (cleanUrl.indexOf('/d/') === 0) {
+        cleanUrl = cleanUrl.substring(3);
+    }
+    var pathPart = cleanUrl.replace(/[\/\\&=:]/g, '_');
+    pathPart = pathPart.substring(0, 250);
+    var uaKey = ua.replace(/[\/\\&=: ]/g, '_');
+    return pathPart + '_' + uaKey + '_' + itemId;
 }
 
 function getFromCache(cacheKey, r) {
     try {
-        const filePath = getCacheFilePath(cacheKey);
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        var filePath = joinPath(CACHE_DIR, cacheKey + '.json');
+        var data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         if (data.expire && data.expire > Date.now()) {
-            if (r) r.warn(`📂 缓存命中`);
             return data.value;
         }
-        // 过期则删除
         try { fs.unlinkSync(filePath); } catch (e) {}
     } catch (e) {}
     return null;
@@ -62,61 +62,54 @@ function getFromCache(cacheKey, r) {
 
 function setToCache(cacheKey, value, r) {
     try {
-        const filePath = getCacheFilePath(cacheKey);
-        const data = JSON.stringify({
+        var filePath = joinPath(CACHE_DIR, cacheKey + '.json');
+        var data = JSON.stringify({
             value: value,
             expire: Date.now() + CACHE_TTL
         });
-        
         try { fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o755 }); } catch (e) {}
         try {
-            const files = fs.readdirSync(CACHE_DIR);
+            var files = fs.readdirSync(CACHE_DIR);
             if (files.length > CLEANUP_THRESHOLD) {
-                const sorted = files
-                    .map(f => {
-                        try {
-                            return { name: f, mtime: fs.statSync(joinPath(CACHE_DIR, f)).mtimeMs };
-                        } catch (e) {
-                            return { name: f, mtime: 0 };
-                        }
-                    })
-                    .filter(f => f.mtime > 0)
-                    .sort((a, b) => a.mtime - b.mtime);
-                
-                const toDelete = Math.ceil(MAX_CACHE_SIZE * 0.2);
-                for (let i = 0; i < toDelete && i < sorted.length; i++) {
-                    try { fs.unlinkSync(joinPath(CACHE_DIR, sorted[i].name)); } catch (e) {}
+                var sorted = [];
+                for (var i = 0; i < files.length; i++) {
+                    var f = files[i];
+                    try {
+                        var mtime = fs.statSync(joinPath(CACHE_DIR, f)).mtimeMs;
+                        sorted.push({ name: f, mtime: mtime });
+                    } catch (e) {
+                        sorted.push({ name: f, mtime: 0 });
+                    }
+                }
+                sorted = sorted.filter(function(f) { return f.mtime > 0; });
+                sorted.sort(function(a, b) { return a.mtime - b.mtime; });
+                var toDelete = Math.ceil(MAX_CACHE_SIZE * 0.2);
+                for (var j = 0; j < toDelete && j < sorted.length; j++) {
+                    try { fs.unlinkSync(joinPath(CACHE_DIR, sorted[j].name)); } catch (e) {}
                 }
             }
         } catch (e) {}
-        
         fs.writeFileSync(filePath, data, 'utf8');
-        if (r) r.warn(`💾 缓存写入成功`);
+		if (r && typeof r.warn === 'function') {
+            r.warn('✅ [缓存写入]  ' + filePath);
+        }
         return true;
     } catch (e) {
-        if (r) r.warn(`💾 缓存写入失败: ${e.message}`);
         return false;
     }
 }
 
-// ---------- 检测 Alist 错误响应 ----------
 function isAlistErrorResponse(text) {
     try {
-        const json = JSON.parse(text);
-        // code 不为 200 且不为 0（部分 API 用 0 表示成功）
+        var json = JSON.parse(text);
         if (json.code !== undefined && json.code !== 200 && json.code !== 0) {
             return true;
         }
-        // message 包含错误关键词
         if (json.message && typeof json.message === 'string') {
-            const msg = json.message.toLowerCase();
-            if (msg.includes('error') || msg.includes('fail') || msg.includes('loading storage') || msg.includes('not found')) {
+            var msg = json.message.toLowerCase();
+            if (msg.includes('error') || msg.includes('fail') || msg.includes('loading storage')) {
                 return true;
             }
-        }
-        // data 为 null 且 code 不是成功码
-        if (json.data === null && json.code !== 200 && json.code !== 0) {
-            return true;
         }
         return false;
     } catch (e) {
@@ -124,42 +117,30 @@ function isAlistErrorResponse(text) {
     }
 }
 
-async function getCachedXYUrl(url, ua, cookie, r) {
-    const cacheKey = getCacheKey(url, ua);
-    if (r) r.warn(`🔑 缓存Key: ${cacheKey}`);
-    
-    let cached = getFromCache(cacheKey, r);
+async function getCachedXYUrl(url, ua, itemId, cookie, r) {
+    var cacheKey = getCacheKey(url, ua, itemId);
+    var cached = getFromCache(cacheKey, r);
     if (cached) {
-        if (r) r.warn(`✅ 缓存命中!`);
         return cached;
     }
-    
-    if (r) r.warn(`🔄 缓存未命中，请求: ${url.substring(0, 60)}...`);
-    const result = await fetchXYApi(url, ua, cookie);
-    
-    if (r) r.warn(`📡 返回长度: ${result.length}，前100字符: ${result.substring(0, 100)}`);
-    
-    // 判断是否应该缓存
-    const isError = result.startsWith('error');
-    const isHtmlError = result.includes('<html') || result.includes('<!DOCTYPE');
-    const isEmpty = result.trim() === '';
-	const isHttpLink = result.trim().startsWith('http://') || result.trim().startsWith('https://');
-    const isJsonError = isAlistErrorResponse(result);
-    
-    // ✅ 只有正常响应才缓存
-    if (!isError && !isHtmlError && !isEmpty && !isJsonError && isHttpLink) {
-        const ok = setToCache(cacheKey, result, r);
-        if (ok && r) r.warn(`💾 缓存写入完成`);
-    } else {
-        if (r) r.warn(`⛔ 未缓存: isError=${isError}, isHtmlError=${isHtmlError}, isEmpty=${isEmpty}, isJsonError=${isJsonError}`);
+    try {
+        var result = await fetchXYApi(url, ua, cookie);
+        var isError = result.startsWith('error');
+        var isHtmlError = result.includes('<html') || result.includes('<!DOCTYPE');
+        var isEmpty = result.trim() === '';
+        var isJsonError = isAlistErrorResponse(result);
+        if (!isError && !isHtmlError && !isEmpty && !isJsonError) {
+            setToCache(cacheKey, result, r);
+        }
+        return result;
+    } catch (e) {
+        return 'error: ' + e;
     }
-    
-    return result;
 }
 
 async function fetchXYApi(xyurl, ua, cookie) {
     try {
-        const res = await ngx.fetch(xyurl, {
+        var res = await ngx.fetch(xyurl, {
             headers: {
                 "Content-Type": 'application/json;charset=utf-8',
                 "User-Agent": ua,
@@ -168,199 +149,367 @@ async function fetchXYApi(xyurl, ua, cookie) {
             max_response_body_size: 65535
         });
         if (res.status >= 301 && res.status <= 307) {
-            return res.headers["Location"] || res.headers["location"] || "error: no location";
+            var loc = res.headers["Location"] || res.headers["location"];
+            return loc || "error: no location";
         }
-        const text = await res.text();
+        var text = await res.text();
         try {
-            const json = JSON.parse(text);
+            var json = JSON.parse(text);
             if (json.url) return json.url;
-            if (json.data && typeof json.data === 'string' && json.data.startsWith('http')) {
-                return json.data;
-            }
             return text;
         } catch (e) {
             return text;
         }
     } catch (error) {
-        return `error: xy_api fetch failed, ${error}`;
+        return 'error: xy_api fetch failed';
     }
 }
 
+// ---------- fetchAlistPathApi ----------
 async function fetchAlistPathApi(alistApiPath, alistFilePath, alistPwd) {
     try {
-        const response = await ngx.fetch(alistApiPath, {
+        var response = await ngx.fetch(alistApiPath, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json;charset=utf-8' },
             max_response_body_size: 65535,
-            body: `{"path":"${alistFilePath}","password":"${alistPwd}"}`
+            body: '{"path":"' + alistFilePath + '","password":"' + alistPwd + '"}'
         });
         if (!response.ok) {
-            return `error: alist_path_api ${response.status} ${response.statusText}`;
+            return 'error: alist_path_api ' + response.status;
         }
-        const result = await response.json();
-        if (!result) return `error: alist_path_api response is null`;
+        var result = await response.json();
+        if (!result) return 'error: alist_path_api response is null';
         if (result.message === 'success') {
             if (result.data.type === 'file') {
                 return result.data.files[0].url;
             }
             if (result.data.type === 'folder') {
-                return result.data.files.map(item => item.name).join(',');
+                var names = [];
+                for (var i = 0; i < result.data.files.length; i++) {
+                    names.push(result.data.files[i].name);
+                }
+                return names.join(',');
             }
         }
         if (result.code === 401) {
-            return `error401: alist_path_api ${result.message}`;
+            return 'error401: alist_path_api ' + result.message;
         }
         if (result.message.includes('account') || result.message === 'path not found') {
-            return `error404: alist_path_api ${result.code} ${result.message}`;
+            return 'error404: alist_path_api ' + result.message;
         }
-        return `error: alist_path_api ${result.code} ${result.message}`;
+        return 'error: alist_path_api ' + result.message;
     } catch (error) {
-        return `error: alist_path_api fetchAlistFiled ${error}`;
+        return 'error: alist_path_api fetchAlistFiled';
     }
 }
 
 async function fetchEmbyFilePath(itemInfoUri, mediaSourceId) {
     try {
-        const res = await ngx.fetch(itemInfoUri, { max_response_body_size: 65535 });
+        var res = await ngx.fetch(itemInfoUri, { max_response_body_size: 65535 });
         if (!res.ok) {
-            return `error: emby_api ${res.status} ${res.statusText}`;
+            return 'error: emby_api ' + res.status;
         }
-        const result = await res.json();
-        if (!result) return `error: emby_api itemInfoUri response is null`;
-        const mediaSource = result.MediaSources.find(m => m.Id == mediaSourceId);
+        var result = await res.json();
+        if (!result) return 'error: emby_api response is null';
+        var mediaSource = null;
+        if (mediaSourceId) {
+            for (var i = 0; i < result.MediaSources.length; i++) {
+                if (result.MediaSources[i].Id == mediaSourceId) {
+                    mediaSource = result.MediaSources[i];
+                    break;
+                }
+            }
+        } else {
+            if (result.MediaSources && result.MediaSources.length > 0) {
+                mediaSource = result.MediaSources[0];
+            }
+        }
         if (!mediaSource) {
-            return `error: emby_api mediaSourceId ${mediaSourceId} not found`;
+            return 'error: emby_api mediaSource not found';
         }
         return mediaSource.Path;
     } catch (error) {
-        return `error: emby_api fetch mediaItemInfo failed, ${error}`;
+        return 'error: emby_api fetch failed';
     }
 }
 
-async function redirect2Pan(r) {
-    const embyHost = 'EMBY_SERVER'; 
-    const embyMountPath = '/';  // rclone 的挂载目录, 例如将od, gd挂载到/mnt目录下:  /mnt/onedrive  /mnt/gd ,那么这里就填写 /mnt  
-    const alistPwd = '56965779';      //alist password
-    const alistApiPath = '_DOCKER_ADDRESS/'; 
-	const ua = r.headersIn["User-Agent"];
-    const cookie = r.headersIn["Cookie"];
-    const all = JSON.stringify(r.headersIn);
-    r.warn(`all: ${all}`);
+async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
+    try {
+        var embyHost = 'http://192.168.2.81:6908';
+        var itemUri = embyHost + '/emby/Users/' + userId + '/Items/' + currentItemId + '?api_key=' + apiKey;
+        var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535 });
+        if (!itemRes.ok) return null;
+        var itemData = await itemRes.json();
+        if (!itemData || !itemData.SeriesId || !itemData.IndexNumber) {
+            return null;
+        }
+        var seriesId = itemData.SeriesId;
+        var currentSeason = itemData.ParentIndexNumber || 1;
+        var currentEpisode = itemData.IndexNumber || 1;
+        var nextEpisode = currentEpisode + 1;
+        var seriesUri = embyHost + '/emby/Users/' + userId + '/Items?api_key=' + apiKey +
+                        '&ParentId=' + seriesId +
+                        '&Fields=Id,IndexNumber,ParentIndexNumber&Recursive=true';
+        var seriesRes = await ngx.fetch(seriesUri, { max_response_body_size: 65535 });
+        if (!seriesRes.ok) return null;
+        var seriesData = await seriesRes.json();
+        var items = seriesData.Items || [];
+        var sortedItems = [];
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            if (item.ParentIndexNumber === currentSeason &&
+                item.IndexNumber &&
+                item.IndexNumber > currentEpisode) {
+                sortedItems.push(item);
+            }
+        }
+        sortedItems.sort(function(a, b) {
+            return a.IndexNumber - b.IndexNumber;
+        });
+        if (sortedItems.length > 0) {
+            return sortedItems[0].Id;
+        }
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
 
-    //fetch mount emby file path
-    const itemId = /[\d]+/.exec(r.uri)[0];
+async function getPlaybackPath(itemId, userId, apiKey, r) {
+    var embyHost = 'http://192.168.2.81:6908';
+
+    try {
+        var strmUri = embyHost + '/emby/Videos/' + itemId + '/stream.strm?api_key=' + apiKey;
+        var res = await ngx.fetch(strmUri, {
+            max_response_body_size: 65535,
+            headers: { 'X-Emby-Token': apiKey }
+        });
+        if (res.ok) {
+            var content = await res.text();
+            var url = content.trim();
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                return url;
+            }
+            if (url && url.includes('DOCKER_ADDRESS')) {
+                return url;
+            }
+        }
+    } catch (e) {}
+
+    try {
+        var playInfoUri = embyHost + '/emby/Items/' + itemId + '/PlaybackInfo?api_key=' + apiKey;
+        var res = await ngx.fetch(playInfoUri, { max_response_body_size: 65535 });
+        if (res.ok) {
+            var data = await res.json();
+            if (data && data.MediaSources && data.MediaSources.length > 0) {
+                var mediaPath = data.MediaSources[0].Path;
+                if (mediaPath) {
+                    return mediaPath;
+                }
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+
+async function getPostBody(r) {
+    try {
+        var body = await r.requestBuffer;
+        if (body) {
+            return String(body);
+        }
+        return '';
+    } catch (e) {
+        return '';
+    }
+}
+
+async function onPlaybackProgress(r) {
+    var body = await getPostBody(r);
+    var data = null;
+    try {
+        data = JSON.parse(body);
+    } catch (e) {
+        r.internalRedirect("@backend");
+        return;
+    }
+    
+    var itemId = data.ItemId || data.Id || null;
+    var userId = data.UserId || null;
+    if (!userId) {
+        var authHeader = r.headersIn["X-Emby-Authorization"];
+        if (authHeader) {
+            var userIdMatch = /UserId="([^"]+)"/.exec(authHeader);
+            if (userIdMatch) {
+                userId = userIdMatch[1];
+            }
+        }
+    }
+    if (!userId) {
+        userId = '1';
+    }
+    
+    var playedPercentage = 0;
+    if (data.PositionTicks !== undefined && data.RunTimeTicks !== undefined && data.RunTimeTicks > 0) {
+        playedPercentage = (data.PositionTicks / data.RunTimeTicks) * 100;
+    } else if (data.PlayedPercentage !== undefined) {
+        playedPercentage = data.PlayedPercentage;
+    }
+    
+    var api_key = r.args.api_key || 'e825ed6f7f8f44ffa0563cddaddce14d';
+    
+    if (r && typeof r.warn === 'function') {
+        r.warn('📊 [进度回调] itemId=' + itemId + ', 进度=' + playedPercentage.toFixed(1) + '%');
+    }
+
+	if (itemId && playedPercentage >= PRELOAD_THRESHOLD) {
+
+		var ua = r.headersIn["User-Agent"] || 'unknown';
+		var cookie = r.headersIn["Cookie"] || '';
+		
+		(async function() {
+			try {
+				var nextItemId = await getNextEpisodeId(itemId, userId, api_key, r);
+				if (!nextItemId) {
+					if (r && typeof r.warn === 'function') {
+						r.warn('ℹ️ [进度回调] 没有下一集');
+					}
+					return;
+				}
+				
+				var nextPath = await getPlaybackPath(nextItemId, userId, api_key, r);
+				if (!nextPath || (!nextPath.includes('http') && !nextPath.includes('DOCKER_ADDRESS'))) {
+					return;
+				}
+				
+				var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
+				//var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('http://xiaoya.host:5678', 'http://127.0.0.1:5234') + '?sign=XIAOYASIGN';
+				//var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80');
+				
+				// 🔑 生成缓存 Key
+				var cacheKey = getCacheKey(alistFilePath, ua,  itemId);
+				
+				// ============================================================
+				// 🔑 一行判断：进度达标 + 缓存不存在 → 才执行预热
+				// ============================================================
+				if (playedPercentage >= PRELOAD_THRESHOLD && !getFromCache(cacheKey, r)) {
+					var result = await getCachedXYUrl(alistFilePath, ua,  nextItemId, cookie, r);
+					if (r && typeof r.warn === 'function' && String(result).startsWith('error')) {
+						r.warn('cachekey:' + cacheKey);
+						r.warn('🔄 [进度回调] 下一集未缓存，开始预热');
+					}
+				} 
+			} catch (e) {
+				if (r && typeof r.warn === 'function') {
+					r.warn('⚠️ [进度回调] 异常: ' + (e.message || e));
+				}
+			}
+		})();
+	}
+    
+    r.internalRedirect("@backend");
+}
+
+// ---------- 主函数 redirect2Pan ----------
+async function redirect2Pan(r) {
+    var embyHost = 'http://192.168.2.81:6908';
+    var alistPwd = '56965779';
+    var alistApiPath = 'http://192.168.2.81:5678/';
+    var ua = r.headersIn["User-Agent"];
+    var cookie = r.headersIn["Cookie"];
+    
+    var itemIdMatch = /\/Videos\/(\d+)/.exec(r.uri);
+    var itemId = itemIdMatch ? itemIdMatch[1] : null;
     if (!itemId) {
-        r.error(`无法从 URI 提取 itemId: ${r.uri}`);
         r.return(400, 'Bad Request');
         return;
     }
     
-    const mediaSourceId = r.args.MediaSourceId;
-    let api_key = r.args.api_key;
-    if ((api_key === null) || (api_key === undefined)) {
-        api_key = 'INFUSE_API_KEY';//这里填自己的API KEY
-        r.error(`api key for Infuse: ${api_key}`);
-    }
-
-    if (r.uri.includes("Subtitles")) {
+    var mediaSourceId = r.args.MediaSourceId;
+    var api_key = r.args.api_key || 'e825ed6f7f8f44ffa0563cddaddce14d';
+    
+    if (r.uri.indexOf("Subtitles") !== -1) {
         r.internalRedirect("@backend");
         return;
     }
     
-    const itemInfoUri = `${embyHost}/emby/Items/${itemId}/PlaybackInfo?api_key=${api_key}`;
-    r.error(`itemInfoUri: ${itemInfoUri}`);
-    
-    let embyRes = await fetchEmbyFilePath(itemInfoUri, mediaSourceId);
+    var itemInfoUri = embyHost + '/emby/Items/' + itemId + '/PlaybackInfo?api_key=' + api_key;
+    var embyRes = await fetchEmbyFilePath(itemInfoUri, mediaSourceId);
     if (embyRes.startsWith('error')) {
-        r.error(embyRes);
         r.return(500, embyRes);
         return;
     }
-    r.error(`mount emby file path: ${embyRes}`);
-
-    const doesNotContainHttp = !embyRes.includes("http");
-    const doesNotContainDOCKER = !embyRes.includes("DOCKER_ADDRESS");
-    const contain115helper = embyRes.includes("P115StrmHelper");
+    
+    var doesNotContainHttp = !embyRes.includes("http");
+    var doesNotContainDOCKER = !embyRes.includes("DOCKER_ADDRESS");
+    var contain115helper = embyRes.includes("P115StrmHelper");
     
     if (contain115helper) {
-        r.warn(`115StrmHelper 发现链接: ${embyRes}`);
-        let helperRedirectUrl = await fetchXYApi(embyRes, ua, cookie);
+        var helperRedirectUrl = await fetchXYApi(embyRes, ua, cookie);
         if (helperRedirectUrl.startsWith('error')) {
-            r.error(`获取115直链失败: ${helperRedirectUrl}`);
             r.internalRedirect("@backend");
             return;
         }
-        r.warn(`115StrmHelper 跳转: ${helperRedirectUrl}`);
         r.return(302, helperRedirectUrl);
         return;
     }
-
+    
     if (doesNotContainHttp && doesNotContainDOCKER) {
-        r.warn(`跳转到本地链接`);
         r.internalRedirect("@backend");
         return;
     }
-
-    if (embyRes.includes("/static/http")) {
-        r.warn(`返回cd2链接: ${embyRes}`);
+    
+    if (embyRes.indexOf("/static/http") !== -1) {
         r.return(302, embyRes);
         return;
     }
-
-	const alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
-	//const alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('http://xiaoya.host:5678', 'http://127.0.0.1:5234') + '?sign=XIAOYASIGN';
-	//const alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80');
-
-    let alistRes = await getCachedXYUrl(alistFilePath, ua, cookie, r);
-    r.warn(`xiaoya容器返回: ${alistRes}`);
-
+    
+    var alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
+	//var alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('http://xiaoya.host:5678', 'http://127.0.0.1:5234') + '?sign=XIAOYASIGN';
+	//var alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80');
+    
+    var alistRes = await getCachedXYUrl(alistFilePath, ua, itemId, cookie, r);
+    
     if (!alistRes.startsWith('error')) {
-        if (alistRes.includes("http")) {
-            r.warn(`跳转到小雅链接: ${alistRes}`);
+        if (alistRes.indexOf("http") !== -1) {
             r.return(302, alistRes);
             return;
         }
         if (alistRes.includes("object not found")) {
-            r.warn(`strm 文件内路径错误`);
             r.return(302, "http://image.xiaoya.pro/404.mp4");
             return;
         }
-        r.warn(`非预期返回，回退到 backend`);
         r.internalRedirect("@backend");
         return;
     }
-
+    
     if (alistRes.startsWith('error401')) {
-        r.error(alistRes);
         r.return(401, alistRes);
         return;
     }
     
     if (alistRes.startsWith('error404')) {
-        const filePath = alistFilePath.substring(alistFilePath.indexOf('/', 1));
-        const foldersRes = await fetchAlistPathApi(alistApiPath, '/', alistPwd);
+        var filePath = alistFilePath.substring(alistFilePath.indexOf('/', 1));
+        var foldersRes = await fetchAlistPathApi(alistApiPath, '/', alistPwd);
         if (foldersRes.startsWith('error')) {
-            r.error(foldersRes);
             r.return(500, foldersRes);
             return;
         }
-        const folders = foldersRes.split(',').sort();
-        for (let i = 0; i < folders.length; i++) {
-            r.error(`try to fetch alist path from /${folders[i]}${filePath}`);
-            const driverRes = await fetchAlistPathApi(alistApiPath, `/${folders[i]}${filePath}`, alistPwd);
+        var folders = foldersRes.split(',');
+        folders.sort();
+        for (var i = 0; i < folders.length; i++) {
+            var driverRes = await fetchAlistPathApi(alistApiPath, '/' + folders[i] + filePath, alistPwd);
             if (!driverRes.startsWith('error')) {
-                r.error(`redirect to: ${driverRes}`);
                 r.return(302, driverRes);
                 return;
             }
         }
-        r.error(alistRes);
         r.return(404, alistRes);
         return;
     }
     
-    r.error(alistRes);
     r.return(500, alistRes);
 }
 
-export default { redirect2Pan };
+// ---------- 导出 ----------
+export default { redirect2Pan, onPlaybackProgress };
