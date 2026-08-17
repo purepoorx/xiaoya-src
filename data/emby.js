@@ -235,7 +235,7 @@ async function fetchEmbyFilePath(itemInfoUri, mediaSourceId) {
 
 async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
     try {
-        var embyHost = 'http://192.168.2.81:6908';
+        var embyHost = 'EMBY_SERVER';
         var itemUri = embyHost + '/emby/Users/' + userId + '/Items/' + currentItemId + '?api_key=' + apiKey;
         var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535 });
         if (!itemRes.ok) return null;
@@ -276,7 +276,7 @@ async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
 }
 
 async function getPlaybackPath(itemId, userId, apiKey, r) {
-    var embyHost = 'http://192.168.2.81:6908';
+    var embyHost = 'EMBY_SERVER';
 
     try {
         var strmUri = embyHost + '/emby/Videos/' + itemId + '/stream.strm?api_key=' + apiKey;
@@ -412,13 +412,13 @@ async function onPlaybackProgress(r) {
 
 // ---------- 主函数 redirect2Pan ----------
 async function redirect2Pan(r) {
-    var embyHost = 'http://192.168.2.81:6908';
+    var embyHost = 'EMBY_SERVER';
     var alistPwd = '56965779';
-    var alistApiPath = 'http://192.168.2.81:5678/';
+    var alistApiPath = '_DOCKER_ADDRESS/';
     var ua = r.headersIn["User-Agent"];
     var cookie = r.headersIn["Cookie"];
     
-    var itemIdMatch = /\/Videos\/(\d+)/.exec(r.uri);
+    var itemIdMatch = /\/videos\/(\d+)/i.exec(r.uri);
     var itemId = itemIdMatch ? itemIdMatch[1] : null;
     if (!itemId) {
         r.return(400, 'Bad Request');

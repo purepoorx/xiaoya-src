@@ -141,7 +141,7 @@ if [ "$(printf '%s\n' "$local_ver" "$remote_ver" | sort -V | head -n1)" != "$rem
     fi
 
     # 下载strm.zip（失败时尝试其他镜像）
-    if [ "$success" = true ]; then
+    if [ "$success" = true ] && [ ! -f /data/hide_strm.txt ]; then
         for base_url in "${base_urls[@]}"; do
             if curl -s --retry 3 --max-time 10 --ipv4 --insecure -fsSL -o "${data_dir}/${strm_zip_bak}" ${base_url}/strm.zip >/dev/null 2>&1 && unzip -t "${data_dir}/${strm_zip_bak}" >/dev/null 2>&1; then
                 echo "成功下载 strm.zip 地址：${base_url}/strm.zip"
