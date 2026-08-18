@@ -327,6 +327,8 @@ async function getPostBody(r) {
 async function onPlaybackProgress(r) {
     var body = await getPostBody(r);
     var data = null;
+	var api_key = r.args.api_key || 'INFUSE_API_KEY';
+	
     try {
         data = JSON.parse(body);
     } catch (e) {
@@ -355,13 +357,11 @@ async function onPlaybackProgress(r) {
     } else if (data.PlayedPercentage !== undefined) {
         playedPercentage = data.PlayedPercentage;
     }
-    
-    var api_key = r.args.api_key || 'e825ed6f7f8f44ffa0563cddaddce14d';
-    
+      
     if (r && typeof r.warn === 'function') {
         r.warn('📊 [进度回调] itemId=' + itemId + ', 进度=' + playedPercentage.toFixed(1) + '%');
     }
-
+		
 	if (itemId && playedPercentage >= PRELOAD_THRESHOLD) {
 
 		var ua = r.headersIn["User-Agent"] || 'unknown';
@@ -424,10 +424,10 @@ async function redirect2Pan(r) {
         r.return(400, 'Bad Request');
         return;
     }
-    
-    var mediaSourceId = r.args.MediaSourceId;
-    var api_key = r.args.api_key || 'e825ed6f7f8f44ffa0563cddaddce14d';
-    
+
+	const mediaSourceId = r.args.MediaSourceId;
+	var api_key = r.args.api_key || 'INFUSE_API_KEY';
+
     if (r.uri.indexOf("Subtitles") !== -1) {
         r.internalRedirect("@backend");
         return;
