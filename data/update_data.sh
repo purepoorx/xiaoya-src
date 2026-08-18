@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # 镜像URL列表，不包含官方URL，官方的后面自动添加
-alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
+#alive_urls=($(curl --ipv4 -s --max-time 4 "https://api.akams.cn/github" |jq -r '.data | sort_by(-.speed, .latency) | .[:10] | .[].url' |sed 's#$#/https://raw.githubusercontent.com/xiaoyaDev/data/main#g' ))
+alive_urls=""
 
 mirror_base_urls=(
     "https://www.gitproxy.click/https://raw.githubusercontent.com/xiaoyaDev/data/main"

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const CACHE_DIR = '/tmp/xy_cache/';
-const CACHE_TTL = 4 * 60 * 60 * 1000;
+const DEFAULT_CACHE_TTL = 4 * 60 * 60 * 1000;
+const MAX_CACHE_TTL = 72 * 60 * 60; 
 const MAX_CACHE_SIZE = 100;
 const CLEANUP_THRESHOLD = 150;
 const PRELOAD_THRESHOLD = 80; // 播放进度超过 80% 时预加载下一集
@@ -60,12 +61,27 @@ function getFromCache(cacheKey, r) {
     return null;
 }
 
-function setToCache(cacheKey, value, r) {
+function setToCache(cacheKey, value, url, r) {
     try {
         var filePath = joinPath(CACHE_DIR, cacheKey + '.json');
+		try {
+            var existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            if (existing.expire && existing.expire > Date.now()) {
+                return true;
+            }
+        } catch (e) {}
+
+		var ttl = getCacheTTL(url);
+        if (ttl === 0) {
+            ttl = DEFAULT_CACHE_TTL;
+        }
+        if (ttl > MAX_CACHE_TTL) {
+            ttl = MAX_CACHE_TTL;
+        }		
+
         var data = JSON.stringify({
             value: value,
-            expire: Date.now() + CACHE_TTL
+            expire: Date.now() + (ttl * 1000)
         });
         try { fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o755 }); } catch (e) {}
         try {
@@ -130,7 +146,7 @@ async function getCachedXYUrl(url, ua, itemId, cookie, r) {
         var isEmpty = result.trim() === '';
         var isJsonError = isAlistErrorResponse(result);
         if (!isError && !isHtmlError && !isEmpty && !isJsonError) {
-            setToCache(cacheKey, result, r);
+            setToCache(cacheKey, result, url, r);
         }
         return result;
     } catch (e) {
@@ -511,5 +527,4 @@ async function redirect2Pan(r) {
     r.return(500, alistRes);
 }
 
-// ---------- 导出 ----------
 export default { redirect2Pan, onPlaybackProgress };
