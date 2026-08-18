@@ -418,7 +418,7 @@ async function redirect2Pan(r) {
     var ua = r.headersIn["User-Agent"];
     var cookie = r.headersIn["Cookie"];
     
-    var itemIdMatch = /\/Videos\/(\d+)/.exec(r.uri);
+    var itemIdMatch = /\/videos\/(\d+)/i.exec(r.uri);
     var itemId = itemIdMatch ? itemIdMatch[1] : null;
     if (!itemId) {
         r.return(400, 'Bad Request');
