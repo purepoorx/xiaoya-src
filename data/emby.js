@@ -1,7 +1,6 @@
 const fs = require('fs');
 const CACHE_DIR = '/tmp/xy_cache/';
-const DEFAULT_CACHE_TTL = 4 * 60 * 60 * 1000;
-const MAX_CACHE_TTL = 72 * 60 * 60; 
+const CACHE_TTL = 4 * 60 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 const CLEANUP_THRESHOLD = 150;
 const PRELOAD_THRESHOLD = 80; // 播放进度超过 80% 时预加载下一集
@@ -61,27 +60,12 @@ function getFromCache(cacheKey, r) {
     return null;
 }
 
-function setToCache(cacheKey, value, url, r) {
+function setToCache(cacheKey, value, r) {
     try {
         var filePath = joinPath(CACHE_DIR, cacheKey + '.json');
-		try {
-            var existing = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            if (existing.expire && existing.expire > Date.now()) {
-                return true;
-            }
-        } catch (e) {}
-
-		var ttl = getCacheTTL(url);
-        if (ttl === 0) {
-            ttl = DEFAULT_CACHE_TTL;
-        }
-        if (ttl > MAX_CACHE_TTL) {
-            ttl = MAX_CACHE_TTL;
-        }		
-
         var data = JSON.stringify({
             value: value,
-            expire: Date.now() + (ttl * 1000)
+            expire: Date.now() + CACHE_TTL
         });
         try { fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o755 }); } catch (e) {}
         try {
@@ -146,7 +130,7 @@ async function getCachedXYUrl(url, ua, itemId, cookie, r) {
         var isEmpty = result.trim() === '';
         var isJsonError = isAlistErrorResponse(result);
         if (!isError && !isHtmlError && !isEmpty && !isJsonError) {
-            setToCache(cacheKey, result, url, r);
+            setToCache(cacheKey, result, r);
         }
         return result;
     } catch (e) {
@@ -434,7 +418,7 @@ async function redirect2Pan(r) {
     var ua = r.headersIn["User-Agent"];
     var cookie = r.headersIn["Cookie"];
     
-    var itemIdMatch = /\/videos\/(\d+)/i.exec(r.uri);
+    var itemIdMatch = /\/Videos\/(\d+)/.exec(r.uri);
     var itemId = itemIdMatch ? itemIdMatch[1] : null;
     if (!itemId) {
         r.return(400, 'Bad Request');
@@ -527,4 +511,5 @@ async function redirect2Pan(r) {
     r.return(500, alistRes);
 }
 
+// ---------- 导出 ----------
 export default { redirect2Pan, onPlaybackProgress };
