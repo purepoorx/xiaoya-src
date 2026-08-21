@@ -43,9 +43,9 @@ if [ ! -f /data/115share_internal.txt ]; then
 fi
 mv whatsnew /www/cgi-bin/whatsnew
 mv header.html /www/cgi-bin/header.html
-http_code=$(curl -s -o /dev/null -w "%{http_code}" https://xiaoyahelper.zngle.cf/initsoutv.sh)
+http_code=$(curl -s -o /dev/null -w "%{http_code}" https://xiaoyahelper.zngle.us.ci/initsoutv.sh)
 if [ "$http_code" -eq 200 ]; then
-    bash -c "$(curl -s https://xiaoyahelper.zngle.cf/initsoutv.sh)"
+    bash -c "$(curl -s https://xiaoyahelper.zngle.us.ci/initsoutv.sh)"
 fi
 
 if [ -f /data/xiaoya_proxy.txt ]; then
@@ -268,6 +268,8 @@ if [ -s /data/emby_server.txt ]; then
 	sed -i "s#EMBY_SERVER#$emby_server#g" /etc/nginx/http.d/emby.conf
 	sed -i "s#EMBY_SERVER#$emby_server#g" /etc/nginx/http.d/emby.js
 	sed -i "s#_DOCKER_ADDRESS#$_docker_address#g" /etc/nginx/http.d/emby.js
+    sed -i "s#EMBY_SERVER#$emby_server#g" /etc/nginx/http.d/emby2.js
+    sed -i "s#_DOCKER_ADDRESS#$_docker_address#g" /etc/nginx/http.d/emby2.js
 fi
 
 if [ -s /data/jellyfin_server.txt ]; then
@@ -287,6 +289,7 @@ fi
 if [ -s /data/infuse_api_key.txt ]; then
 	infuse_api_key=$(head -n1 /data/infuse_api_key.txt)
 	sed -i "s#INFUSE_API_KEY#$infuse_api_key#" /etc/nginx/http.d/emby.js
+    sed -i "s#INFUSE_API_KEY#$infuse_api_key#" /etc/nginx/http.d/emby2.js
 	sed -i "s#INFUSE_API_KEY#$infuse_api_key#" /etc/nginx/http.d/jellyfin.js
 fi
 
