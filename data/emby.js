@@ -463,26 +463,107 @@ async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
     }
 }
 
+async function getItemRunTimeTicks(itemId, userId, apiKey, r) {
+    try {
+        var embyHost = 'EMBY_SERVER';
+        var uri = embyHost + '/emby/Users/' + userId + '/Items/' + itemId + '?api_key=' + apiKey;
+        var res = await ngx.fetch(uri, { max_response_body_size: 65535 });
+        if (!res.ok) {
+            if (r && typeof r.warn === 'function') {
+                r.warn('⚠️ [API] 请求失败: ' + res.status);
+            }
+            return null;
+        }
+        var data = await res.json();
+
+        return data.RunTimeTicks || null;
+    } catch (e) {
+        if (r && typeof r.warn === 'function') {
+            r.warn('⚠️ [API] 获取 RunTimeTicks 异常: ' + (e.message || e));
+        }
+        return null;
+    }
+}
+
 async function onPlaybackProgress(r) {
     var body = await getPostBody(r);
     var data = null;
     var api_key = r.args.api_key || 'INFUSE_API_KEY';
-    
+    var args = r.args;
+	
     try {
-        data = JSON.parse(body);
+        if (body && body.trim() !== '') {
+            data = JSON.parse(body);
+        }
     } catch (e) {
-        r.internalRedirect("@backend");
-        return;
+        // body 不是 JSON，忽略
     }
     
-    var itemId = data.ItemId || data.Id || null;
-    var userId = await getUserId(r, data);
-    
+    var itemId = null;
+    if (data && data.ItemId) {
+        itemId = data.ItemId;
+    } else if (data && data.Id) {
+        itemId = data.Id;
+    } else if (args.ItemId) {
+        itemId = args.ItemId;
+    }
+
+    var userId = null;
+    if (data && data.UserId) {
+        userId = data.UserId;
+    } else if (args.UserId) {
+        userId = args.UserId;
+    } else {
+        var authHeader = r.headersIn["X-Emby-Authorization"];
+        if (authHeader) {
+            var userIdMatch = /UserId=([^&]+)/.exec(r.uri);
+            if (!userIdMatch) {
+                userIdMatch = /UserId="([^"]+)"/.exec(authHeader);
+            }
+            if (userIdMatch) {
+                userId = userIdMatch[1];
+            }
+        }
+    }
+
+    if (!userId) {
+        userId = await getUserId(r, data);
+    }
+	
     var playedPercentage = 0;
-    if (data.PositionTicks !== undefined && data.RunTimeTicks !== undefined && data.RunTimeTicks > 0) {
-        playedPercentage = (data.PositionTicks / data.RunTimeTicks) * 100;
-    } else if (data.PlayedPercentage !== undefined) {
+    var positionTicks = 0;
+    var runTimeTicks = 0;
+
+    if (data) {
+        if (data.PositionTicks !== undefined) {
+            positionTicks = data.PositionTicks;
+        }
+        if (data.RunTimeTicks !== undefined && data.RunTimeTicks > 0) {
+            runTimeTicks = data.RunTimeTicks;
+        }
+    }
+
+    if (positionTicks > 0 && runTimeTicks === 0 && itemId && userId) {
+        runTimeTicks = await getItemRunTimeTicks(itemId, userId, api_key, r);
+    }
+
+    if (positionTicks > 0 && runTimeTicks > 0) {
+        playedPercentage = (positionTicks / runTimeTicks) * 100;
+    }
+
+    if (data && data.PlayedPercentage !== undefined && data.PlayedPercentage > 0) {
         playedPercentage = data.PlayedPercentage;
+    }
+
+    if (playedPercentage === 0 && args.PlayedPercentage) {
+        playedPercentage = parseFloat(args.PlayedPercentage);
+    }
+    if (playedPercentage === 0 && args.PositionTicks && args.RunTimeTicks) {
+        var posT = parseFloat(args.PositionTicks);
+        var runT = parseFloat(args.RunTimeTicks);
+        if (posT > 0 && runT > 0) {
+            playedPercentage = (posT / runT) * 100;
+        }
     }
     
     if (r && typeof r.warn === 'function') {
@@ -523,10 +604,7 @@ async function onPlaybackProgress(r) {
 				
 				var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
 				
-				// 🔧 修复：使用 nextItemId 生成 cacheKey（而不是 itemId）
 				var cacheKey = getCacheKey(alistFilePath, ua, nextItemId);
-
-				// 检查缓存是否存在
 				var cached = getFromCache(cacheKey, r);
 				if (cached) {
 					if (r && typeof r.warn === 'function') {
@@ -653,6 +731,5 @@ async function redirect2Pan(r) {
     r.return(500, alistRes);
 }
 
-// ---------- 导出 ----------
 export default { redirect2Pan, onPlaybackProgress, getNextEpisodeId, getUserId };
 
