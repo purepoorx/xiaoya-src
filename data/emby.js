@@ -3,7 +3,7 @@ const CACHE_DIR = '/tmp/xy_cache/';
 const CACHE_TTL = 4 * 60 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 const CLEANUP_THRESHOLD = 150;
-const PRELOAD_THRESHOLD = 80; // 播放进度超过 80% 时预加载下一集
+const PRELOAD_THRESHOLD = 80;
 
 (function initCacheDir() {
     try {
@@ -90,8 +90,8 @@ function setToCache(cacheKey, value, r) {
             }
         } catch (e) {}
         fs.writeFileSync(filePath, data, 'utf8');
-		if (r && typeof r.warn === 'function') {
-            r.warn('✅ [缓存写入]  ' + filePath);
+        if (r && typeof r.warn === 'function') {
+            r.warn('✅ [缓存写入] ' + filePath);
         }
         return true;
     } catch (e) {
@@ -165,7 +165,6 @@ async function fetchXYApi(xyurl, ua, cookie) {
     }
 }
 
-// ---------- fetchAlistPathApi ----------
 async function fetchAlistPathApi(alistApiPath, alistFilePath, alistPwd) {
     try {
         var response = await ngx.fetch(alistApiPath, {
@@ -233,48 +232,6 @@ async function fetchEmbyFilePath(itemInfoUri, mediaSourceId) {
     }
 }
 
-async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
-    try {
-        var embyHost = 'EMBY_SERVER';
-        var itemUri = embyHost + '/emby/Users/' + userId + '/Items/' + currentItemId + '?api_key=' + apiKey;
-        var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535 });
-        if (!itemRes.ok) return null;
-        var itemData = await itemRes.json();
-        if (!itemData || !itemData.SeriesId || !itemData.IndexNumber) {
-            return null;
-        }
-        var seriesId = itemData.SeriesId;
-        var currentSeason = itemData.ParentIndexNumber || 1;
-        var currentEpisode = itemData.IndexNumber || 1;
-        var nextEpisode = currentEpisode + 1;
-        var seriesUri = embyHost + '/emby/Users/' + userId + '/Items?api_key=' + apiKey +
-                        '&ParentId=' + seriesId +
-                        '&Fields=Id,IndexNumber,ParentIndexNumber&Recursive=true';
-        var seriesRes = await ngx.fetch(seriesUri, { max_response_body_size: 65535 });
-        if (!seriesRes.ok) return null;
-        var seriesData = await seriesRes.json();
-        var items = seriesData.Items || [];
-        var sortedItems = [];
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            if (item.ParentIndexNumber === currentSeason &&
-                item.IndexNumber &&
-                item.IndexNumber > currentEpisode) {
-                sortedItems.push(item);
-            }
-        }
-        sortedItems.sort(function(a, b) {
-            return a.IndexNumber - b.IndexNumber;
-        });
-        if (sortedItems.length > 0) {
-            return sortedItems[0].Id;
-        }
-        return null;
-    } catch (error) {
-        return null;
-    }
-}
-
 async function getPlaybackPath(itemId, userId, apiKey, r) {
     var embyHost = 'EMBY_SERVER';
 
@@ -324,11 +281,193 @@ async function getPostBody(r) {
     }
 }
 
+var userIdCache = {};
+var USER_CACHE_TTL = 86400000; //一天 
+
+async function fetchUserIdByUsername(username, apiKey, r) {
+    try {
+        var embyHost = 'EMBY_SERVER';
+        var uri = embyHost + '/emby/Users?api_key=' + apiKey;
+        var res = await ngx.fetch(uri, { max_response_body_size: 65535 });
+        if (!res.ok) return null;
+        var users = await res.json();
+        if (!users || users.length === 0) return null;
+        for (var i = 0; i < users.length; i++) {
+            if (users[i].Name && users[i].Name.toLowerCase() === username.toLowerCase()) {
+                return users[i].Id;
+            }
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function fetchFirstUserId(apiKey, r) {
+    try {
+        var embyHost = 'EMBY_SERVER';
+        var uri = embyHost + '/emby/Users?api_key=' + apiKey;
+        var res = await ngx.fetch(uri, { max_response_body_size: 65535 });
+        if (!res.ok) return null;
+        var users = await res.json();
+        if (!users || users.length === 0) return null;
+        return users[0].Id;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function getUserId(r, data) {
+    var api_key = r.args.api_key || 'INFUSE_API_KEY';
+    var now = Date.now();
+    var username = null;
+    var userId = null;
+
+    var authHeader = r.headersIn["X-Emby-Authorization"];
+    if (authHeader) {
+        var userNameMatch = /UserName="([^"]+)"/.exec(authHeader);
+        if (userNameMatch) {
+            username = userNameMatch[1];
+        }
+    }
+    if (!username) {
+        username = r.args.UserName || null;
+    }
+    if (!username && data && data.UserName) {
+        username = data.UserName;
+    }
+
+    if (username) {
+        var cacheKey = 'uname_' + username.toLowerCase();
+        if (userIdCache[cacheKey] && userIdCache._time && userIdCache._time[cacheKey] && (now - userIdCache._time[cacheKey] < USER_CACHE_TTL)) {
+            userId = userIdCache[cacheKey];
+        } else {
+            userId = await fetchUserIdByUsername(username, api_key, r);
+            if (userId) {
+                userIdCache[cacheKey] = userId;
+                if (!userIdCache._time) userIdCache._time = {};
+                userIdCache._time[cacheKey] = now;
+            }
+        }
+    }
+
+    if (!userId && authHeader) {
+        var userIdMatch = /UserId="([^"]+)"/.exec(authHeader);
+        if (userIdMatch) {
+            userId = userIdMatch[1];
+        }
+    }
+
+    if (!userId) {
+        userId = r.args.UserId || null;
+    }
+
+    if (!userId && data && data.UserId) {
+        userId = data.UserId;
+    }
+
+    if (!userId) {
+        var fallbackKey = 'first_user';
+        if (userIdCache[fallbackKey] && userIdCache._time && userIdCache._time[fallbackKey] && (now - userIdCache._time[fallbackKey] < USER_CACHE_TTL)) {
+            userId = userIdCache[fallbackKey];
+        } else {
+            userId = await fetchFirstUserId(api_key, r);
+            if (userId) {
+                userIdCache[fallbackKey] = userId;
+                if (!userIdCache._time) userIdCache._time = {};
+                userIdCache._time[fallbackKey] = now;
+            }
+        }
+    }
+
+    if (r && typeof r.warn === 'function') {
+        //r.warn('📊 [UserId] 最终: ' + userId);
+    }
+    return userId;
+}
+
+async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
+    try {
+        var embyHost = 'EMBY_SERVER';
+        var itemUri = embyHost + '/emby/Users/' + userId + '/Items/' + currentItemId + '?api_key=' + apiKey;
+        
+        if (r && typeof r.warn === 'function') {
+            //r.warn('🔍 [getNextEpisodeId] 请求: ' + itemUri);
+        }
+        
+        var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535 });
+        if (!itemRes.ok) {
+            if (r && typeof r.warn === 'function') {
+                r.warn('⚠️ [getNextEpisodeId] 响应状态: ' + itemRes.status);
+            }
+            return null;
+        }
+        
+        var itemData = await itemRes.json();
+        if (!itemData || !itemData.SeriesId || !itemData.IndexNumber) {
+            if (r && typeof r.warn === 'function') {
+                r.warn('⚠️ [getNextEpisodeId] 不是剧集: SeriesId=' + itemData.SeriesId + ', IndexNumber=' + itemData.IndexNumber);
+            }
+            return null;
+        }
+        
+        var seriesId = itemData.SeriesId;
+        var currentSeason = itemData.ParentIndexNumber || 1;
+        var currentEpisode = itemData.IndexNumber || 1;
+        
+        var seriesUri = embyHost + '/emby/Users/' + userId + '/Items?api_key=' + apiKey +
+                        '&ParentId=' + seriesId +
+                        '&Fields=Id,IndexNumber,ParentIndexNumber&Recursive=true';
+        
+        var seriesRes = await ngx.fetch(seriesUri, { max_response_body_size: 65535 });
+        if (!seriesRes.ok) {
+            if (r && typeof r.warn === 'function') {
+                r.warn('⚠️ [getNextEpisodeId] seriesRes 失败: ' + seriesRes.status);
+            }
+            return null;
+        }
+        
+        var seriesData = await seriesRes.json();
+        var items = seriesData.Items || [];
+        var sortedItems = [];
+        
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            if (item.ParentIndexNumber === currentSeason &&
+                item.IndexNumber &&
+                item.IndexNumber > currentEpisode) {
+                sortedItems.push(item);
+            }
+        }
+        
+        sortedItems.sort(function(a, b) {
+            return a.IndexNumber - b.IndexNumber;
+        });
+        
+        if (sortedItems.length > 0) {
+            if (r && typeof r.warn === 'function') {
+                //r.warn('✅ [getNextEpisodeId] 找到下一集: 第' + sortedItems[0].IndexNumber + '集, ID: ' + sortedItems[0].Id);
+            }
+            return sortedItems[0].Id;
+        }
+        
+        if (r && typeof r.warn === 'function') {
+            r.warn('ℹ️ [getNextEpisodeId] 没有下一集');
+        }
+        return null;
+    } catch (error) {
+        if (r && typeof r.warn === 'function') {
+            r.warn('⚠️ [getNextEpisodeId] 异常: ' + (error.message || error));
+        }
+        return null;
+    }
+}
+
 async function onPlaybackProgress(r) {
     var body = await getPostBody(r);
     var data = null;
-	var api_key = r.args.api_key || 'INFUSE_API_KEY';
-	
+    var api_key = r.args.api_key || 'INFUSE_API_KEY';
+    
     try {
         data = JSON.parse(body);
     } catch (e) {
@@ -337,19 +476,7 @@ async function onPlaybackProgress(r) {
     }
     
     var itemId = data.ItemId || data.Id || null;
-    var userId = data.UserId || null;
-    if (!userId) {
-        var authHeader = r.headersIn["X-Emby-Authorization"];
-        if (authHeader) {
-            var userIdMatch = /UserId="([^"]+)"/.exec(authHeader);
-            if (userIdMatch) {
-                userId = userIdMatch[1];
-            }
-        }
-    }
-    if (!userId) {
-        userId = '1';
-    }
+    var userId = await getUserId(r, data);
     
     var playedPercentage = 0;
     if (data.PositionTicks !== undefined && data.RunTimeTicks !== undefined && data.RunTimeTicks > 0) {
@@ -357,13 +484,13 @@ async function onPlaybackProgress(r) {
     } else if (data.PlayedPercentage !== undefined) {
         playedPercentage = data.PlayedPercentage;
     }
-      
+    
     if (r && typeof r.warn === 'function') {
-        r.warn('📊 [进度回调] itemId=' + itemId + ', 进度=' + playedPercentage.toFixed(1) + '%');
+		r.warn('-----------------------------------------------------------------------------------')
+        r.warn('📊 [进度回调] 进度=' + playedPercentage.toFixed(1) + '%  ' + 'itemId=' + itemId + ', userId=' + userId);
     }
-		
-	if (itemId && playedPercentage >= PRELOAD_THRESHOLD) {
-
+    
+	if (itemId && userId && playedPercentage >= PRELOAD_THRESHOLD) {
 		var ua = r.headersIn["User-Agent"] || 'unknown';
 		var cookie = r.headersIn["Cookie"] || '';
 		
@@ -377,40 +504,57 @@ async function onPlaybackProgress(r) {
 					return;
 				}
 				
+				if (r && typeof r.warn === 'function') {
+					r.warn('🔍 [预热调试] nextItemId=' + nextItemId);
+				}
+				
 				var nextPath = await getPlaybackPath(nextItemId, userId, api_key, r);
+				
+				if (r && typeof r.warn === 'function') {
+					r.warn('🔍 [预热调试] nextPath=' + (nextPath || 'null'));
+				}
+				
 				if (!nextPath || (!nextPath.includes('http') && !nextPath.includes('DOCKER_ADDRESS'))) {
+					if (r && typeof r.warn === 'function') {
+						r.warn('⚠️ [预热调试] nextPath 无效，跳过');
+					}
 					return;
 				}
 				
 				var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
-				//var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('http://xiaoya.host:5678', 'http://127.0.0.1:5234') + '?sign=XIAOYASIGN';
-				//var alistFilePath = nextPath.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80');
 				
-				// 🔑 生成缓存 Key
-				var cacheKey = getCacheKey(alistFilePath, ua,  itemId);
-				
-				// ============================================================
-				// 🔑 一行判断：进度达标 + 缓存不存在 → 才执行预热
-				// ============================================================
-				if (playedPercentage >= PRELOAD_THRESHOLD && !getFromCache(cacheKey, r)) {
-					var result = await getCachedXYUrl(alistFilePath, ua,  nextItemId, cookie, r);
-					if (r && typeof r.warn === 'function' && String(result).startsWith('error')) {
-						r.warn('cachekey:' + cacheKey);
-						r.warn('🔄 [进度回调] 下一集未缓存，开始预热');
+				// 🔧 修复：使用 nextItemId 生成 cacheKey（而不是 itemId）
+				var cacheKey = getCacheKey(alistFilePath, ua, nextItemId);
+
+				// 检查缓存是否存在
+				var cached = getFromCache(cacheKey, r);
+				if (cached) {
+					if (r && typeof r.warn === 'function') {
+						r.warn('✅ [预热调试] 缓存已存在，跳过');
 					}
-				} 
+					return;
+				}
+		
+				var result = await getCachedXYUrl(alistFilePath, ua, nextItemId, cookie, r);
+				
+				if (r && typeof r.warn === 'function') {
+					r.warn('✅ [获取直链] ' + (result ? result.substring(0, 150) : 'null'));
+					if (result && !String(result).startsWith('error') && String(result).includes('http')) {
+						//r.warn('✅ [预热调试] 预热成功！');
+					} else {
+						r.warn('❌ [预热调试] 预热失败: ' + (result || 'null'));
+					}
+				}
 			} catch (e) {
 				if (r && typeof r.warn === 'function') {
-					r.warn('⚠️ [进度回调] 异常: ' + (e.message || e));
+					r.warn('⚠️ [预热调试] 异常: ' + (e.message || e));
 				}
 			}
 		})();
-	}
-    
+	} 
     r.internalRedirect("@backend");
 }
 
-// ---------- 主函数 redirect2Pan ----------
 async function redirect2Pan(r) {
     var embyHost = 'EMBY_SERVER';
     var alistPwd = '56965779';
@@ -425,8 +569,8 @@ async function redirect2Pan(r) {
         return;
     }
 
-	const mediaSourceId = r.args.MediaSourceId;
-	var api_key = r.args.api_key || 'INFUSE_API_KEY';
+    var mediaSourceId = r.args.MediaSourceId;
+    var api_key = r.args.api_key || 'INFUSE_API_KEY';
 
     if (r.uri.indexOf("Subtitles") !== -1) {
         r.internalRedirect("@backend");
@@ -465,8 +609,6 @@ async function redirect2Pan(r) {
     }
     
     var alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80') + '?sign=XIAOYASIGN';
-	//var alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('_DOCKER_ADDRESS', 'http://127.0.0.1:5234').replace('http://xiaoya.host:5678', 'http://127.0.0.1:5234') + '?sign=XIAOYASIGN';
-	//var alistFilePath = embyRes.replace('DOCKER_ADDRESS', 'http://127.0.0.1:80').replace('http://xiaoya.host:5678', 'http://127.0.0.1:80');
     
     var alistRes = await getCachedXYUrl(alistFilePath, ua, itemId, cookie, r);
     
@@ -512,4 +654,5 @@ async function redirect2Pan(r) {
 }
 
 // ---------- 导出 ----------
-export default { redirect2Pan, onPlaybackProgress };
+export default { redirect2Pan, onPlaybackProgress, getNextEpisodeId, getUserId };
+
