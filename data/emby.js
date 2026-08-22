@@ -639,7 +639,9 @@ async function redirect2Pan(r) {
     var alistApiPath = '_DOCKER_ADDRESS/';
     var ua = r.headersIn["User-Agent"];
     var cookie = r.headersIn["Cookie"];
-    
+   
+try {
+ 
     var itemIdMatch = /\/videos\/(\d+)/i.exec(r.uri);
     var itemId = itemIdMatch ? itemIdMatch[1] : null;
     if (!itemId) {
@@ -647,7 +649,33 @@ async function redirect2Pan(r) {
         return;
     }
 
-    var mediaSourceId = r.args.MediaSourceId;
+    //var mediaSourceId = r.args.MediaSourceId;
+    var mediaSourceId = null;
+    
+    if (r.args.MediaSourceId) {
+        mediaSourceId = r.args.MediaSourceId;
+    }
+    
+    var msMatch = /mediasource_([^\/]+)/i.exec(r.uri);
+    if (msMatch) {
+        mediaSourceId = 'mediasource_' + msMatch[1];
+    }
+    
+    if (!mediaSourceId) {
+        var token = r.args.api_key || r.args['X-Emby-Token'] || r.headersIn["X-Emby-Token"];
+        // 尝试从 X-Emby-Authorization 中提取
+        var authHeader = r.headersIn["X-Emby-Authorization"];
+        if (authHeader) {
+            var msMatch2 = /MediaSourceId=([^&\s"]+)/.exec(authHeader);
+            if (msMatch2) {
+                mediaSourceId = msMatch2[1];
+            }
+        }
+    }
+    
+    if (!mediaSourceId) {
+        mediaSourceId = null;
+    }
     var api_key = r.args.api_key || 'INFUSE_API_KEY';
 
     if (r.uri.indexOf("Subtitles") !== -1) {
@@ -656,12 +684,14 @@ async function redirect2Pan(r) {
     }
     
     var itemInfoUri = embyHost + '/emby/Items/' + itemId + '/PlaybackInfo?api_key=' + api_key;
+r.error('itemInfoUri: ' + itemInfoUri);
     var embyRes = await fetchEmbyFilePath(itemInfoUri, mediaSourceId);
+r.error('fetchEmbyFilePath 返回: ' + embyRes);
     if (embyRes.startsWith('error')) {
         r.return(500, embyRes);
         return;
     }
-    
+
     var doesNotContainHttp = !embyRes.includes("http");
     var doesNotContainDOCKER = !embyRes.includes("DOCKER_ADDRESS");
     var contain115helper = embyRes.includes("P115StrmHelper");
@@ -728,7 +758,12 @@ async function redirect2Pan(r) {
         return;
     }
     
-    r.return(500, alistRes);
+    } catch (e) {
+        r.error('redirect2Pan 异常: ' + (e.message || e));
+        r.return(500, 'Internal Error: ' + (e.message || e));
+    }
+
+    //r.return(500, alistRes);
 }
 
 export default { redirect2Pan, onPlaybackProgress, getNextEpisodeId, getUserId };
