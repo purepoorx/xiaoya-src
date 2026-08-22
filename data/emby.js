@@ -1,5 +1,4 @@
 var fs = require('fs');
-
 var CACHE_DIR = '/tmp/xy_cache/';
 var CACHE_TTL = 4 * 60 * 60 * 1000;
 var MAX_CACHE_SIZE = 100;
@@ -117,7 +116,6 @@ function isAlistErrorResponse(text) {
         return false;
     }
 }
-
 
 async function fetchXYApi(xyurl, ua, cookie) {
     try {
@@ -309,7 +307,7 @@ async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
 }
 
 var userIdCache = {};
-var USER_CACHE_TTL = 300000;
+var USER_CACHE_TTL = 30000000;
 
 async function fetchUserIdByUsername(username, apiKey, r) {
     try {
@@ -398,10 +396,6 @@ async function getUserId(r) {
         }
     }
 
-    if (!userId) {
-        userId = 'd6d064193eaf417a8237718389011dca';
-    }
-
     return userId;
 }
 
@@ -482,7 +476,6 @@ async function redirect2Pan(r) {
                 }
             }
         } catch (e) {
-            // 预加载失败不影响播放
             if (r && typeof r.warn === 'function') {
                 r.warn('⚠️ [预加载] 异常: ' + (e.message || e));
             }
