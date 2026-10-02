@@ -149,7 +149,7 @@ async function fetchAlistPathApi(alistApiPath, alistFilePath, alistPwd) {
         var response = await ngx.fetch(alistApiPath, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json;charset=utf-8' },
-            max_response_body_size: 65535,
+            max_response_body_size: 65535, timeout: 3000,
             body: '{"path":"' + alistFilePath + '","password":"' + alistPwd + '"}'
         });
         if (!response.ok) {
@@ -183,7 +183,7 @@ async function fetchAlistPathApi(alistApiPath, alistFilePath, alistPwd) {
 
 async function fetchEmbyFilePath(itemInfoUri, mediaSourceId) {
     try {
-        var res = await ngx.fetch(itemInfoUri, { max_response_body_size: 65535 });
+        var res = await ngx.fetch(itemInfoUri, { max_response_body_size: 65535, timeout: 3000 });
         if (!res.ok) {
             return 'error: emby_api ' + res.status;
         }
@@ -235,7 +235,7 @@ async function getPlaybackPath(itemId, userId, apiKey, r) {
     try {
         var strmUri = EMBY_HOST + '/emby/Videos/' + itemId + '/stream.strm?api_key=' + apiKey;
         var res = await ngx.fetch(strmUri, {
-            max_response_body_size: 65535,
+            max_response_body_size: 65535, timeout: 3000,
             headers: { 'X-Emby-Token': apiKey }
         });
         if (res.ok) {
@@ -252,7 +252,7 @@ async function getPlaybackPath(itemId, userId, apiKey, r) {
 
     try {
         var playInfoUri = EMBY_HOST + '/emby/Items/' + itemId + '/PlaybackInfo?api_key=' + apiKey;
-        var res = await ngx.fetch(playInfoUri, { max_response_body_size: 65535 });
+        var res = await ngx.fetch(playInfoUri, { max_response_body_size: 65535, timeout: 3000 });
         if (res.ok) {
             var data = await res.json();
             if (data && data.MediaSources && data.MediaSources.length > 0) {
@@ -269,7 +269,7 @@ async function getPlaybackPath(itemId, userId, apiKey, r) {
 async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
     try {
         var itemUri = EMBY_HOST + '/emby/Users/' + userId + '/Items/' + currentItemId + '?api_key=' + apiKey;
-        var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535 });
+        var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535, timeout: 3000 });
         if (!itemRes.ok) return null;
         var itemData = await itemRes.json();
         if (!itemData || !itemData.SeriesId || !itemData.IndexNumber) {
@@ -281,7 +281,7 @@ async function getNextEpisodeId(currentItemId, userId, apiKey, r) {
         var seriesUri = EMBY_HOST + '/emby/Users/' + userId + '/Items?api_key=' + apiKey +
                         '&ParentId=' + seriesId +
                         '&Fields=Id,IndexNumber,ParentIndexNumber&Recursive=true';
-        var seriesRes = await ngx.fetch(seriesUri, { max_response_body_size: 65535 });
+        var seriesRes = await ngx.fetch(seriesUri, { max_response_body_size: 65535, timeout: 3000 });
         if (!seriesRes.ok) return null;
         var seriesData = await seriesRes.json();
         var items = seriesData.Items || [];
@@ -312,7 +312,7 @@ var USER_CACHE_TTL = 30000000;
 async function fetchUserIdByUsername(username, apiKey, r) {
     try {
         var uri = EMBY_HOST + '/emby/Users?api_key=' + apiKey;
-        var res = await ngx.fetch(uri, { max_response_body_size: 65535 });
+        var res = await ngx.fetch(uri, { max_response_body_size: 65535, timeout: 3000 });
         if (!res.ok) return null;
         var users = await res.json();
         if (!users || users.length === 0) return null;
@@ -330,7 +330,7 @@ async function fetchUserIdByUsername(username, apiKey, r) {
 async function fetchFirstUserId(apiKey, r) {
     try {
         var uri = EMBY_HOST + '/emby/Users?api_key=' + apiKey;
-        var res = await ngx.fetch(uri, { max_response_body_size: 65535 });
+        var res = await ngx.fetch(uri, { max_response_body_size: 65535, timeout: 3000 });
         if (!res.ok) return null;
         var users = await res.json();
         if (!users || users.length === 0) return null;
@@ -448,7 +448,7 @@ async function redirect2Pan(r) {
             if (!userId) return;
             
             var itemUri = embyHost + '/emby/Users/' + userId + '/Items/' + itemId + '?api_key=' + api_key;
-            var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535 });
+            var itemRes = await ngx.fetch(itemUri, { max_response_body_size: 65535, timeout: 3000 });
             if (!itemRes.ok) return;
             
             var itemData = await itemRes.json();
